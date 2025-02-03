@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>夸克搜索影视多宫格图片编辑器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+<!-- 设置区域 -->
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700">选择宫格数量:</label>
+    <select id="gridSize" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+        <option value="4">4 x 4</option>
+        <option value="3">3 x 3</option>
+        <option value="2">2 x 2</option>
+    </select>
+</div>
+
+<!-- 关键词设置和历史记录区域 -->
+<div class="mb-4 space-y-4">
+    <div>
+        <label class="block text-sm font-medium text-gray-700">夸克搜索关键词:</label>
+        <input type="text" id="searchKeyword" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" onchange="updateSearchKeyword(this.value)">
+    </div>
+
+    <!-- 历史记录选择区域 -->
+    <div>
+        <div class="flex justify-between items-center mb-2">
+            <label class="block text-sm font-medium text-gray-700">历史记录:</label>
+            <button
+                    onclick="randomCombineFromAllGroups()"
+                    class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                </svg>
+                <span>随机组合</span>
+            </button>
+        </div>
+        <div id="historyContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            <!-- 历史记录将在这里动态生成 -->
+        </div>
+    </div>
+</div>
+
+<!-- 图片宫格容器 -->
+<div id="gridContainer" class="grid bg-white">
+    <!-- 动态生成的格子将插入这里 -->
+</div>
+
+<!-- 生成按钮区域 -->
+<div class="mt-4 flex space-x-4">
+    <button id="generateImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
+        生成图片
+    </button>
+    <button id="generateColumnImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
+        生成列图片
+    </button>
+</div>
+
+<!-- 编辑模态框 -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-96">
+        <h3 class="text-lg font-medium mb-4">编辑内容</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">选择图片</label>
+                <input type="file" accept="image/*" id="imageInput" class="mt-1">
+                <div id="imagePreviewContainer" class="mt-2"></div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">剧名</label>
+                <input type="text" id="titleInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">演员名称</label>
+                <input type="text" id="actorInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">划重点</label>
+                <input type="text" id="highlightInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button id="cancelEdit" class="px-4 py-2 border rounded-md">取消</button>
+                <button id="saveEdit" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 列选择模态框 -->
+<div id="columnSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-96">
+        <h3 class="text-lg font-medium mb-4">选择要替换的列</h3>
+        <div id="columnSelectContainer" class="grid grid-cols-4 gap-2 mb-4">
+            <!-- 列选项将在这里动态生成 -->
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeColumnSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 列图片选择模态框 -->
+<div id="columnImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-96">
+        <h3 class="text-lg font-medium mb-4">选择要导出的列</h3>
+        <div id="columnImageSelectContainer" class="grid grid-cols-4 gap-2 mb-4">
+            <!-- 列选项将在这里动态生成 -->
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeColumnImageModal()" class="px-4 py-2 border rounded-md">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentEditingCell = null;
+    let gridData = [];
+    let pendingHistoryItem = null; // 存储待应用的历史记录项
+    let currentTemplate = null;
+
+    // 添加 IndexedDB 相关代码
+    const dbName = 'gridHistoryDB';
+    const storeName = 'history';
+    let db;
+
+    // 初始化数据库
+    async function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(dbName, 1);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(storeName)) {
+                    const store = db.createObjectStore(storeName, { keyPath: 'id' });
+                    store.createIndex('timestamp', 'timestamp');
+                    store.createIndex('filename', 'filename');
+                }
+            };
+        });
+    }
+
+    function initializeGrid(size) {
+        const container = document.getElementById('gridContainer');
+        // 设置容器样式为等比缩放
+        container.style.width = '100%';
+        container.style.maxWidth = '1000px'; // 可以调整最大显示宽度
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        container.style.gap = '0';
+        container.innerHTML = '';
+        gridData = [];
+
+        for (let i = 0; i < size * size; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <span class="text-gray-400">点击添加内容</span>
+                    </div>
+                `;
+            cell.addEventListener('click', () => openEditModal(i));
+            container.appendChild(cell);
+            gridData[i] = null;
+        }
+    }
+
+    function openEditModal(index) {
+        currentEditingCell = index;
+        document.getElementById('editModal').classList.remove('hidden');
+
+        // 清空所有输入和预览
+        document.getElementById('imageInput').value = '';
+        document.getElementById('titleInput').value = '';
+        document.getElementById('actorInput').value = '';
+        document.getElementById('highlightInput').value = '';
+        document.getElementById('imagePreviewContainer').innerHTML = '';
+
+        // 如果已有数据，填充表单
+        if (gridData[index]) {
+            document.getElementById('titleInput').value = gridData[index].title || '';
+            document.getElementById('actorInput').value = gridData[index].actor || '';
+            document.getElementById('highlightInput').value = gridData[index].highlight || '';
+
+            // 显示已有图片预览
+            if (gridData[index].image) {
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                previewContainer.innerHTML = `
+                        <img src="${gridData[index].image}" class="mt-2 max-w-full h-32 object-contain">
+                    `;
+            }
+        }
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+        currentEditingCell = null;
+        // 清空表单
+        document.getElementById('imageInput').value = '';
+        document.getElementById('titleInput').value = '';
+        document.getElementById('actorInput').value = '';
+        document.getElementById('highlightInput').value = '';
+    }
+
+    // 修改 generatePreviewImage 函数
+    async function generatePreviewImage(data) {
+        const FIXED_SIZE = 720;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = FIXED_SIZE;
+        canvas.height = FIXED_SIZE;
+
+        // 绘制白色背景
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, FIXED_SIZE, FIXED_SIZE);
+
+        // 加载并绘制图片
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        try {
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = data.image;
+            });
+
+            // 计算图片绘制尺寸
+            // 强制宽度为720，高度按比例计算
+            const scale = FIXED_SIZE / img.width;
+            const drawWidth = FIXED_SIZE;
+            const drawHeight = img.height * scale;
+            const drawX = 0;
+            const drawY = 0; // 靠上对齐
+
+            // 绘制图片
+            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+            // 设置文字阴影效果
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+
+            // 绘制文字
+            ctx.fillStyle = 'white';
+            const fontSize = FIXED_SIZE * 0.06;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = 'top';
+
+            // 绘制演员名称 - 右对齐，保留右侧间距
+            const actorText = `★ ${data.actor || ''}`;
+            const actorMetrics = ctx.measureText(actorText);
+            ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.05);
+
+            // 绘制搜索关键词 - 分开绘制前缀和关键词
+            ctx.fillStyle = 'white';
+            ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.05);
+
+            // 计算前缀文本宽度
+            const prefixWidth = ctx.measureText('跨克嗖索[').width;
+
+            // 绘制关键词部分（红色）
+            ctx.fillStyle = '#ff4444';
+            ctx.fillText(data.searchKeyword || '', FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.05);
+
+            // 绘制后缀括号（白色）
+            ctx.fillStyle = 'white';
+            const keywordWidth = ctx.measureText(data.searchKeyword || '').width;
+            ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.05);
+
+            // 绘制剧名 - 向上移动位置
+            ctx.font = `bold ${FIXED_SIZE * 0.1}px sans-serif`;
+            ctx.fillText(data.title || '', FIXED_SIZE * 0.05, FIXED_SIZE * 0.65); // 从0.75改为0.7
+
+            // 绘制划重点 - 支持多行文本
+            ctx.fillStyle = '#ff4444';
+            ctx.font = `${FIXED_SIZE * 0.05}px sans-serif`;
+            const highlightText = `划重点：${data.highlight || ''}`;
+            const maxWidth = FIXED_SIZE * 0.9; // 最大宽度为90%的画布宽度
+            const lineHeight = FIXED_SIZE * 0.06; // 行高
+            const startY = FIXED_SIZE * 0.78; // 从0.85改为0.78，增加与剧名的间距
+
+            // 文本换行处理函数
+            function wrapText(text, x, y, maxWidth, lineHeight) {
+                const words = text.split('');
+                let line = '';
+                let y0 = y;
+
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n];
+                    const metrics = ctx.measureText(testLine);
+                    const testWidth = metrics.width;
+
+                    if (testWidth > maxWidth && n > 0) {
+                        ctx.fillText(line, x, y0);
+                        line = words[n];
+                        y0 += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, x, y0);
+            }
+
+            // 应用文本换行
+            wrapText(highlightText, FIXED_SIZE * 0.05, startY, maxWidth, lineHeight);
+
+            // 在绘制完所有文字后，清除阴影设置
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            return canvas.toDataURL('image/jpeg', 0.8);
+        } catch (error) {
+            console.error('图片生成失败:', error);
+            return null;
+        }
+    }
+
+    // 修改 updateCell 函数
+    async function updateCell(index, data, saveToHistory = true) {
+        const cell = document.getElementById('gridContainer').children[index];
+
+        // 生成预览图片
+        const previewImageUrl = await generatePreviewImage(data);
+
+        if (previewImageUrl) {
+            cell.innerHTML = `
+                    <div class="image-container">
+                        <img src="${previewImageUrl}" draggable="false">
+                    </div>
+                `;
+
+            // 如果需要保存到历史记录，使用 saveToHistory
+            if (saveToHistory) {
+                delete data.shouldSaveToHistory;
+                await saveToHistory(data);
+            }
+        } else {
+            cell.innerHTML = `
+                    <div class="flex items-center justify-center h-full">
+                        <span class="text-gray-400">图片加载失败</span>
+                    </div>
+                `;
+        }
+
+        cell.addEventListener('click', () => openEditModal(index));
+    }
+
+    // 保存历史记录
+    async function saveToHistory(data) {
+        if (!db) await initDB();
+
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+
+            const historyItem = {
+                ...data,
+                id: Date.now() + Math.random(),
+                timestamp: new Date().toISOString()
+            };
+
+            const request = store.add(historyItem);
+            request.onsuccess = () => resolve(historyItem);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 获取所有历史记录
+    async function getAllHistory() {
+        if (!db) await initDB();
+
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.index('timestamp').getAll();
+
+            request.onsuccess = () => resolve(request.result.reverse());
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 删除历史记录
+    async function deleteHistoryItem(id) {
+        if (!db) await initDB();
+
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.delete(id);
+
+            request.onsuccess = () => {
+                updateHistoryDisplay();
+                resolve();
+            };
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // 修改 updateHistoryDisplay 函数
+    async function updateHistoryDisplay() {
+        const container = document.getElementById('historyContainer');
+        const history = await getAllHistory();
+
+        // 按文件名前缀分组
+        const groups = groupHistoryByPrefix(history);
+
+        // 生成分组后的HTML
+        container.innerHTML = Object.entries(groups).map(([prefix, items]) => `
+                <div class="col-span-full">
+                    <div class="text-sm font-medium text-gray-700 mb-2 bg-gray-50 p-2 rounded">
+                        ${prefix} (${items.length}项)
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                        ${items.map(item => `
+                            <div class="relative group cursor-pointer border rounded p-2" onclick="applyHistoryItem(${item.id})">
+                                <div class="flex space-x-2">
+                                    <div class="w-12 h-12 flex-shrink-0">
+                                        <img src="${item.image}" class="w-full h-full object-cover rounded">
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium truncate">${item.title || ''}</div>
+                                        <div class="text-xs text-gray-500 truncate">${item.actor || ''}</div>
+                                    </div>
+                                </div>
+                                <div class="absolute top-1 right-1 flex space-x-1">
+                                    <button
+                                        onclick="event.stopPropagation(); handleCopyClick(${item.id})"
+                                        class="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="复制"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
+                                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onclick="event.stopPropagation(); deleteHistoryItem(${item.id})"
+                                        class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="删除"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    // 修改历史记录容器的样式
+    document.getElementById('historyContainer').className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2';
+
+    // 添加新的CSS样式
+    const style = document.createElement('style');
+    style.textContent = `
+            /* 历史记录分组样式 */
+            #historyContainer > div {
+                background-color: white;
+                transition: all 0.2s;
+            }
+
+            #historyContainer > div:hover {
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            /* 缩小分组标题的间距 */
+            #historyContainer .text-sm {
+                margin-bottom: 0.5rem;
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.25rem;
+                background-color: #f3f4f6;
+                font-size: 0.75rem;
+            }
+
+            /* 优化项目卡片样式 */
+            #historyContainer .grid-cols-2 > div {
+                padding: 0.5rem;
+            }
+
+            /* 缩小图片预览尺寸 */
+            #historyContainer .w-12 {
+                width: 2.5rem;
+            }
+
+            #historyContainer .h-12 {
+                height: 2.5rem;
+            }
+
+            /* 优化文字显示 */
+            #historyContainer .text-sm {
+                font-size: 0.75rem;
+                line-height: 1;
+            }
+
+            #historyContainer .text-xs {
+                font-size: 0.65rem;
+                line-height: 1;
+            }
+
+            /* 减小整体间距 */
+            #historyContainer .gap-2 {
+                gap: 0.375rem;
+            }
+
+            #historyContainer .mb-4 {
+                margin-bottom: 0.75rem;
+            }
+
+            /* 优化按钮大小 */
+            #historyContainer .w-5 {
+                width: 1.125rem;
+            }
+
+            #historyContainer .h-5 {
+                height: 1.125rem;
+            }
+        `;
+    document.head.appendChild(style);
+
+    // 添加分组函数
+    function groupHistoryByPrefix(history) {
+        const groups = {};
+
+        history.forEach(item => {
+            if (!item.filename) return;
+
+            // 获取文件名前缀（去掉扩展名和数字后缀）
+            const filename = item.filename;
+            const nameWithoutExt = filename.replace(/\.[^/.]+$/, ''); // 去掉扩展名
+            const prefix = nameWithoutExt.replace(/[0-9]+$/, '').trim(); // 去掉数字后缀
+
+            if (!groups[prefix]) {
+                groups[prefix] = [];
+            }
+            groups[prefix].push(item);
+        });
+
+        // 对每个分组内的项目按时间戳排序（最新的在前）
+        Object.values(groups).forEach(group => {
+            group.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        });
+
+        // 对分组键按字母顺序排序
+        const sortedGroups = {};
+        Object.keys(groups).sort().forEach(key => {
+            sortedGroups[key] = groups[key];
+        });
+
+        return sortedGroups;
+    }
+
+    // 修改 applyHistoryItem 函数
+    async function applyHistoryItem(id) {
+        try {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                const item = request.result;
+                if (!item) return;
+
+                const searchKeyword = document.getElementById('searchKeyword').value; // 获取当前关键词
+                const size = parseInt(document.getElementById('gridSize').value);
+                let emptyColIndex = -1;
+
+                // 检查每一列的第一个格子
+                for (let col = 0; col < size; col++) {
+                    if (!gridData[col]) {
+                        emptyColIndex = col;
+                        break;
+                    }
+                }
+
+                if (emptyColIndex === -1) {
+                    // 没有空列，显示列选择模态框
+                    showColumnSelectModal({...item, searchKeyword});
+                    return;
+                }
+
+                // 更新整列数据
+                for (let row = 0; row < size; row++) {
+                    const index = row * size + emptyColIndex;
+                    gridData[index] = {
+                        ...item,
+                        searchKeyword, // 使用当前关键词
+                        offsetX: 0,
+                        offsetY: 0
+                    };
+                    updateCell(index, gridData[index]);
+                }
+            };
+
+            request.onerror = () => {
+                console.error('获取历史记录失败:', request.error);
+            };
+        } catch (error) {
+            console.error('应用历史记录失败:', error);
+        }
+    }
+
+    // 修改 showColumnSelectModal 函数
+    async function showColumnSelectModal(historyItem) {
+        pendingHistoryItem = historyItem;
+        const modal = document.getElementById('columnSelectModal');
+        const container = document.getElementById('columnSelectContainer');
+        const size = parseInt(document.getElementById('gridSize').value);
+
+        // 生成列选项
+        container.innerHTML = '';
+        for (let col = 0; col < size; col++) {
+            const firstCellIndex = col;
+            const data = gridData[firstCellIndex];
+            const preview = data ? `
+                    <div class="flex space-x-2">
+                        <div class="w-12 h-12 flex-shrink-0">
+                            <img src="${data.image}" class="w-full h-full object-cover rounded">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium truncate">${data.title || ''}</div>
+                            <div class="text-xs text-gray-500 truncate">${data.actor || ''}</div>
+                        </div>
+                    </div>
+                ` : '<div class="text-gray-400">空列</div>';
+
+            container.innerHTML += `
+                    <div
+                        onclick="applyHistoryItemToColumn(${col})"
+                        class="cursor-pointer border rounded p-2 hover:bg-gray-100"
+                    >
+                        <div class="text-xs font-medium mb-1">第 ${col + 1} 列</div>
+                        ${preview}
+                    </div>
+                `;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // 修改 applyHistoryItemToColumn 函数
+    async function applyHistoryItemToColumn(colIndex) {
+        if (!pendingHistoryItem) return;
+
+        const searchKeyword = document.getElementById('searchKeyword').value;
+        const size = parseInt(document.getElementById('gridSize').value);
+
+        // 更新整列数据
+        for (let row = 0; row < size; row++) {
+            const index = row * size + colIndex;
+            gridData[index] = {
+                ...pendingHistoryItem,
+                searchKeyword,
+                offsetX: 0,
+                offsetY: 0
+            };
+            updateCell(index, gridData[index]);
+        }
+
+        closeColumnSelectModal();
+    }
+
+    function closeColumnSelectModal() {
+        document.getElementById('columnSelectModal').classList.add('hidden');
+        pendingHistoryItem = null;
+    }
+
+    // 添加关键词更新函数
+    function updateSearchKeyword(keyword) {
+        const size = parseInt(document.getElementById('gridSize').value);
+        const totalCells = size * size;
+
+        // 更新所有已有内容的格子
+        for (let i = 0; i < totalCells; i++) {
+            if (gridData[i]) {
+                gridData[i].searchKeyword = keyword;
+                updateCell(i, gridData[i]);
+            }
+        }
+    }
+
+    // 修改 saveCell 函数
+    async function saveCell() {
+        const imageFile = document.getElementById('imageInput').files[0];
+        const title = document.getElementById('titleInput').value;
+        const actor = document.getElementById('actorInput').value;
+        const highlight = document.getElementById('highlightInput').value;
+        const searchKeyword = document.getElementById('searchKeyword').value;
+
+        // 如果没有选择新图片但有旧数据，保留旧图片
+        if (!imageFile && gridData[currentEditingCell]) {
+            const updatedData = {
+                ...gridData[currentEditingCell],
+                title,
+                actor,
+                highlight,
+                searchKeyword
+            };
+
+            // 先保存到历史记录（只保存一次）
+            if (updatedData.shouldSaveToHistory) {
+                delete updatedData.shouldSaveToHistory;
+                await saveToHistory(updatedData);
+            }
+
+            // 更新整列数据
+            const size = parseInt(document.getElementById('gridSize').value);
+            const colIndex = currentEditingCell % size;
+            for (let row = 0; row < size; row++) {
+                const index = row * size + colIndex;
+                gridData[index] = {...updatedData};
+                await updateCell(index, gridData[index], false); // 传入 false 表示不保存历史记录
+            }
+
+            closeEditModal();
+            return;
+        }
+
+        if (!imageFile) {
+            alert('请选择图片');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            const newData = {
+                image: e.target.result,
+                title,
+                actor,
+                highlight,
+                searchKeyword,
+                filename: imageFile.name,
+                offsetX: 0,
+                offsetY: 0
+            };
+
+            // 先保存到历史记录（只保存一次）
+            await saveToHistory(newData);
+
+            // 更新整列数据
+            const size = parseInt(document.getElementById('gridSize').value);
+            const colIndex = currentEditingCell % size;
+            for (let row = 0; row < size; row++) {
+                const index = row * size + colIndex;
+                gridData[index] = {...newData};
+                await updateCell(index, gridData[index], false); // 传入 false 表示不保存历史记录
+            }
+
+            closeEditModal();
+        };
+        reader.readAsDataURL(imageFile);
+    }
+
+    // 修改图片预览处理函数
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewContainer = document.getElementById('imagePreviewContainer');
+                previewContainer.innerHTML = ''; // 清空现有预览
+                const preview = document.createElement('img');
+                preview.src = e.target.result;
+                preview.className = 'mt-2 max-w-full h-32 object-contain';
+                previewContainer.appendChild(preview);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // 初始化事件监听
+    document.getElementById('gridSize').addEventListener('change', (e) => {
+        initializeGrid(parseInt(e.target.value));
+    });
+
+    document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+    document.getElementById('saveEdit').addEventListener('click', saveCell);
+
+    // 修改生成图片的函数
+    async function generateGridImage() {
+        const size = parseInt(document.getElementById('gridSize').value);
+        const promises = [];
+
+        // 收集所有格子的预览图片生成Promise
+        for (let i = 0; i < size * size; i++) {
+            if (gridData[i]) {
+                promises.push(generatePreviewImage(gridData[i]));
+            }
+        }
+
+        // 等待所有预览图片生成完成
+        const previewImages = await Promise.all(promises);
+
+        // 创建最终的画布
+        const CELL_SIZE = 720; // 每个格子的大小与预览图片一致
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = CELL_SIZE * size;
+        canvas.height = CELL_SIZE * size;
+
+        // 绘制白色背景
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 将预览图片绘制到对应位置
+        let imageIndex = 0;
+        for (let i = 0; i < size * size; i++) {
+            if (gridData[i]) {
+                const row = Math.floor(i / size);
+                const col = i % size;
+                const x = col * CELL_SIZE;
+                const y = row * CELL_SIZE;
+
+                const img = new Image();
+                await new Promise((resolve) => {
+                    img.onload = resolve;
+                    img.src = previewImages[imageIndex];
+                });
+
+                ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
+                imageIndex++;
+            }
+        }
+
+        // 导出图片
+        const link = document.createElement('a');
+        link.download = `grid-${Date.now()}.jpg`;
+        link.href = canvas.toDataURL('image/jpeg', 0.8);
+        link.click();
+    }
+
+    // 添加数据迁移函数
+    async function migrateFromLocalStorage() {
+        try {
+            // 检查是否已经迁移过（可以通过localStorage中的一个标志来检查）
+            if (localStorage.getItem('migrated') === 'true') {
+                return;
+            }
+
+            // 获取localStorage中的历史记录
+            const oldHistory = JSON.parse(localStorage.getItem('gridHistory') || '[]');
+
+            if (oldHistory.length > 0) {
+                // 确保数据库已初始化
+                if (!db) await initDB();
+
+                // 开始迁移数据
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+
+                // 使用Promise.all来并行处理所有迁移操作
+                await Promise.all(oldHistory.map(item => {
+                    return new Promise((resolve, reject) => {
+                        // 确保每个项目都有必要的字段
+                        const migratedItem = {
+                            ...item,
+                            id: item.id || Date.now() + Math.random(),
+                            timestamp: item.timestamp || new Date().toISOString()
+                        };
+
+                        const request = store.add(migratedItem);
+                        request.onsuccess = () => resolve();
+                        request.onerror = () => reject(request.error);
+                    });
+                }));
+
+                // 迁移完成后，清除localStorage中的旧数据
+                localStorage.removeItem('gridHistory');
+                // 设置迁移完成标志
+                localStorage.setItem('migrated', 'true');
+
+                console.log(`成功迁移 ${oldHistory.length} 条历史记录到 IndexedDB`);
+            }
+        } catch (error) {
+            console.error('数据迁移失败:', error);
+        }
+    }
+
+    // 修改初始化代码，添加迁移步骤
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            await initDB();
+            await migrateFromLocalStorage(); // 执行迁移
+            await updateHistoryDisplay();
+        } catch (error) {
+            console.error('初始化失败:', error);
+        }
+    });
+
+    // 初始化4x4网格
+    initializeGrid(4);
+
+    // 修改生成列图片的函数
+    async function generateColumnImage(colIndex) {
+        const size = parseInt(document.getElementById('gridSize').value);
+        const cellIndex = colIndex;
+
+        if (!gridData[cellIndex]) {
+            alert('该列没有内容');
+            return;
+        }
+
+        // 直接使用generatePreviewImage生成图片
+        const previewImageUrl = await generatePreviewImage(gridData[cellIndex]);
+
+        if (!previewImageUrl) {
+            alert('图片生成失败');
+            return;
+        }
+
+        // 导出图片
+        const data = gridData[cellIndex];
+        const actor = data.actor || 'unknown';
+        const title = data.title || 'untitled';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${actor}_${title}_${timestamp}.jpg`;
+
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = previewImageUrl;
+        link.click();
+
+        closeColumnImageModal();
+    }
+
+    // 更新事件监听器
+    document.getElementById('generateImage').addEventListener('click', generateGridImage);
+
+    // 添加列图片导出相关函数
+    function showColumnImageModal() {
+        const modal = document.getElementById('columnImageModal');
+        const container = document.getElementById('columnImageSelectContainer');
+        const size = parseInt(document.getElementById('gridSize').value);
+
+        container.innerHTML = '';
+        for (let col = 0; col < size; col++) {
+            const firstCellIndex = col;
+            const data = gridData[firstCellIndex];
+            const preview = data ? `
+                    <div class="flex space-x-2">
+                        <div class="w-12 h-12 flex-shrink-0">
+                            <img src="${data.image}" class="w-full h-full object-cover rounded">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium truncate">${data.title || ''}</div>
+                            <div class="text-xs text-gray-500 truncate">${data.actor || ''}</div>
+                        </div>
+                    </div>
+                ` : '<div class="text-gray-400">空列</div>';
+
+            container.innerHTML += `
+                    <div
+                        onclick="generateColumnImage(${col})"
+                        class="cursor-pointer border rounded p-2 hover:bg-gray-100"
+                    >
+                        <div class="text-xs font-medium mb-1">第 ${col + 1} 列</div>
+                        ${preview}
+                    </div>
+                `;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeColumnImageModal() {
+        document.getElementById('columnImageModal').classList.add('hidden');
+    }
+
+    // 添加生成列图片按钮事件监听
+    document.getElementById('generateColumnImage').addEventListener('click', showColumnImageModal);
+
+    // 修改复制按钮的处理函数
+    async function handleCopyClick(id) {
+        event.stopPropagation(); // 阻止事件冒泡
+
+        try {
+            // 从 IndexedDB 获取对应的记录
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                const item = request.result;
+                if (!item) {
+                    console.error('未找到记录:', id);
+                    return;
+                }
+
+                currentTemplate = item;
+                // 打开文件选择对话框
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.accept = 'image/*';
+                input.onchange = handleMultipleImages;
+                input.click();
+            };
+
+            request.onerror = () => {
+                console.error('获取记录失败:', request.error);
+            };
+        } catch (error) {
+            console.error('复制操作失败:', error);
+        }
+    }
+
+    // 处理多个图片的函数
+    async function handleMultipleImages(event) {
+        if (!currentTemplate) return;
+
+        const files = Array.from(event.target.files);
+        const history = await getAllHistory();
+        const existingFilenames = new Set(history.map(item => item.filename));
+
+        for (const file of files) {
+            if (existingFilenames.has(file.name)) {
+                console.log(`跳过重复文件: ${file.name}`);
+                continue;
+            }
+
+            try {
+                const imageDataUrl = await readFileAsDataURL(file);
+                const newItem = {
+                    ...currentTemplate,
+                    image: imageDataUrl,
+                    filename: file.name
+                };
+
+                await saveToHistory(newItem);
+                existingFilenames.add(file.name);
+            } catch (error) {
+                console.error('处理图片失败:', error);
+            }
+        }
+
+        updateHistoryDisplay();
+        currentTemplate = null;
+    }
+
+    // 辅助函数：读取文件为DataURL
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // 修改随机组合函数名和逻辑
+    async function randomCombineFromAllGroups() {
+        try {
+            const history = await getAllHistory();
+            const groups = groupHistoryByPrefix(history);
+            const groupNames = Object.keys(groups);
+
+            if (groupNames.length === 0) {
+                alert('没有可用的数据进行随机组合');
+                return;
+            }
+
+            // 随机选择最多4个不同的分组
+            const selectedGroups = shuffle(groupNames).slice(0, 4);
+
+            // 从每个选中的分组中随机选择一项
+            const selectedItems = selectedGroups.map(groupName => {
+                const groupItems = groups[groupName] || [];
+                return groupItems[Math.floor(Math.random() * groupItems.length)];
+            }).filter(item => item);
+
+            if (selectedItems.length === 0) {
+                alert('没有足够的数据进行随机组合');
+                return;
+            }
+
+            // 清空现有数据
+            const size = parseInt(document.getElementById('gridSize').value);
+            gridData = new Array(size * size).fill(null);
+
+            // 填充随机选择的项目
+            const searchKeyword = document.getElementById('searchKeyword').value;
+            selectedItems.forEach((item, index) => {
+                if (index < size) { // 确保不超过网格大小
+                    for (let row = 0; row < size; row++) {
+                        const cellIndex = row * size + index;
+                        gridData[cellIndex] = {
+                            ...item,
+                            searchKeyword,
+                            offsetX: 0,
+                            offsetY: 0
+                        };
+                        updateCell(cellIndex, gridData[cellIndex], false);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('随机组合失败:', error);
+            alert('随机组合失败，请重试');
+        }
+    }
+
+    // 数组随机打乱函数
+    function shuffle(array) {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    }
+</script>
+
+<style>
+    /* 确保导出时的图片比例正确 */
+    #gridContainer {
+        aspect-ratio: 1;
+    }
+
+    #gridContainer > div {
+        aspect-ratio: 1;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .image-container {
+        position: relative;
+        overflow: hidden;
+        padding-bottom: 100%; /* 保持1:1比例 */
+    }
+
+    .image-container img {
+        transition: transform 0.1s ease-out;
+        will-change: transform;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform-origin: center center; /* 确保变换以中心点为基准 */
+    }
+
+    /* 确保导出时的元素位置正确 */
+    #gridContainer .absolute {
+        position: absolute !important;
+    }
+
+    /* 优化跨克嗖索样式 */
+    #gridContainer .bg-white {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    #gridContainer .bg-white span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        height: 100%;
+    }
+
+    /* 确保文字不会有额外的行高影响垂直居中 */
+    #gridContainer .leading-none {
+        line-height: 1 !important;
+    }
+
+    /* 历史记录和列选择样式 */
+    #historyContainer > div,
+    #columnSelectContainer > div {
+        background-color: white;
+        transition: all 0.2s;
+    }
+
+    #historyContainer > div:hover,
+    #columnSelectContainer > div:hover {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 图片预览容器样式 */
+    #historyContainer img,
+    #columnSelectContainer img {
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* 添加文字阴影效果，提高可读性 */
+    .drop-shadow-lg {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 优化下划线样式 */
+    .underline {
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+    }
+
+    /* 添加文字发光效果 */
+    .glow-text {
+        text-shadow: 0 0 10px rgba(255, 0, 0, 0.8),
+        0 0 20px rgba(255, 0, 0, 0.8),
+        0 0 30px rgba(255, 0, 0, 0.8);
+        font-weight: 600;
+        color: white;
+    }
+</style>
+</body>
+</html>
