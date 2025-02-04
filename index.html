@@ -1,579 +1,589 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>夸克搜索影视多宫格图片编辑器</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 p-4">
-<!-- 设置区域 - 修改为flex布局 -->
-<div class="mb-4 flex space-x-4">
-    <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700">选择宫格数量:</label>
-        <select id="gridSize" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
-            <option value="4">4 x 4</option>
-            <option value="3">3 x 3</option>
-            <option value="2">2 x 2</option>
-        </select>
-    </div>
-    <div class="flex-1">
-        <label class="block text-sm font-medium text-gray-700">选择编辑模式:</label>
-        <select id="editMode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
-            <option value="column">列复制（整列同步）</option>
-            <option value="unique">格子唯一（每格独立）</option>
-        </select>
-    </div>
-</div>
-
-<!-- 关键词设置和历史记录区域 -->
-<div class="mb-4 space-y-4">
-    <div class="flex space-x-4">
+    <!-- 设置区域 - 修改为flex布局 -->
+    <div class="mb-4 flex space-x-4">
         <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700">夸克搜索关键词:</label>
-            <input type="text" id="searchKeyword" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" onchange="updateSearchKeyword(this.value)">
+            <label class="block text-sm font-medium text-gray-700">选择宫格数量:</label>
+            <select id="gridSize"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+                <option value="4">4 x 4</option>
+                <option value="3">3 x 3</option>
+                <option value="2">2 x 2</option>
+            </select>
         </div>
         <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700">水印Logo:</label>
-            <div class="flex space-x-2">
-                <input type="file" id="watermarkInput" accept="image/*" multiple class="hidden" onChange="handleWatermarkUpload(event)">
-                <button onclick="document.getElementById('watermarkInput').click()" class="mt-1 px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600">
-                    上传水印
-                </button>
+            <label class="block text-sm font-medium text-gray-700">选择编辑模式:</label>
+            <select id="editMode"
+                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+                <option value="column">列复制（整列同步）</option>
+                <option value="unique">格子唯一（每格独立）</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 关键词设置和历史记录区域 -->
+    <div class="mb-4 space-y-4">
+        <div class="flex space-x-4">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">夸克搜索关键词:</label>
+                <input type="text" id="searchKeyword"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500"
+                    onchange="updateSearchKeyword(this.value)">
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700">水印Logo:</label>
+                <div class="flex space-x-2">
+                    <input type="file" id="watermarkInput" accept="image/*" multiple class="hidden"
+                        onChange="handleWatermarkUpload(event)">
+                    <button onclick="document.getElementById('watermarkInput').click()"
+                        class="mt-1 px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600">
+                        上传水印
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 历史记录选择区域 -->
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <label class="block text-sm font-medium text-gray-700">历史记录:</label>
+                <div class="flex space-x-2">
+                    <button onclick="randomCombineFromAllGroups()"
+                        class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <span>随机组合</span>
+                    </button>
+                    <button onclick="shuffleCurrentGrid()"
+                        class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path
+                                d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
+                        </svg>
+                        <span>打乱</span>
+                    </button>
+                </div>
+            </div>
+            <div id="historyContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                <!-- 历史记录将在这里动态生成 -->
             </div>
         </div>
     </div>
 
-    <!-- 历史记录选择区域 -->
-    <div>
-        <div class="flex justify-between items-center mb-2">
-            <label class="block text-sm font-medium text-gray-700">历史记录:</label>
-            <div class="flex space-x-2">
-                <button
-                    onclick="randomCombineFromAllGroups()"
-                    class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-                    </svg>
-                    <span>随机组合</span>
-                </button>
-                <button
-                    onclick="shuffleCurrentGrid()"
-                    class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
-                    </svg>
-                    <span>打乱</span>
-                </button>
+    <!-- 图片宫格容器 -->
+    <div id="gridContainer" class="grid bg-white">
+        <!-- 动态生成的格子将插入这里 -->
+    </div>
+
+    <!-- 修改生成按钮区域 -->
+    <div class="mt-4 flex space-x-4">
+        <button id="generateImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
+            生成图片
+        </button>
+        <button id="generateCellImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
+            导出格子图片
+        </button>
+    </div>
+
+    <!-- 编辑模态框 -->
+    <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-medium mb-4">编辑内容</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">选择图片</label>
+                    <input type="file" accept="image/*" id="imageInput" class="mt-1">
+                    <div id="imagePreviewContainer" class="mt-2"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">剧名</label>
+                    <input type="text" id="titleInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">演员名称</label>
+                    <input type="text" id="actorInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">划重点</label>
+                    <input type="text" id="highlightInput"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button id="cancelEdit" class="px-4 py-2 border rounded-md">取消</button>
+                    <button id="saveEdit" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+                </div>
             </div>
-        </div>
-        <div id="historyContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-            <!-- 历史记录将在这里动态生成 -->
         </div>
     </div>
-</div>
 
-<!-- 图片宫格容器 -->
-<div id="gridContainer" class="grid bg-white">
-    <!-- 动态生成的格子将插入这里 -->
-</div>
-
-<!-- 修改生成按钮区域 -->
-<div class="mt-4 flex space-x-4">
-    <button id="generateImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
-        生成图片
-    </button>
-    <button id="generateCellImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
-        导出格子图片
-    </button>
-</div>
-
-<!-- 编辑模态框 -->
-<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-96">
-        <h3 class="text-lg font-medium mb-4">编辑内容</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">选择图片</label>
-                <input type="file" accept="image/*" id="imageInput" class="mt-1">
-                <div id="imagePreviewContainer" class="mt-2"></div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">剧名</label>
-                <input type="text" id="titleInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">演员名称</label>
-                <input type="text" id="actorInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">划重点</label>
-                <input type="text" id="highlightInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+    <!-- 列选择模态框 -->
+    <div id="columnSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-medium mb-4">选择要替换的列</h3>
+            <div id="columnSelectContainer" class="grid grid-cols-4 gap-2 mb-4">
+                <!-- 列选项将在这里动态生成 -->
             </div>
             <div class="flex justify-end space-x-2">
-                <button id="cancelEdit" class="px-4 py-2 border rounded-md">取消</button>
-                <button id="saveEdit" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+                <button onclick="closeColumnSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
             </div>
         </div>
     </div>
-</div>
 
-<!-- 列选择模态框 -->
-<div id="columnSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-96">
-        <h3 class="text-lg font-medium mb-4">选择要替换的列</h3>
-        <div id="columnSelectContainer" class="grid grid-cols-4 gap-2 mb-4">
-            <!-- 列选项将在这里动态生成 -->
-        </div>
-        <div class="flex justify-end space-x-2">
-            <button onclick="closeColumnSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
+    <!-- 修改列图片选择模态框为格子图片选择模态框 -->
+    <div id="cellImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-[30vw]">
+            <h3 class="text-lg font-medium mb-4">选择要导出的格子</h3>
+            <div id="cellImageSelectContainer" class="grid mb-4">
+                <!-- 格子选项将在这里动态生成 -->
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeCellImageModal()" class="px-4 py-2 border rounded-md">取消</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 修改列图片选择模态框为格子图片选择模态框 -->
-<div id="cellImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-[30vw]">
-        <h3 class="text-lg font-medium mb-4">选择要导出的格子</h3>
-        <div id="cellImageSelectContainer" class="grid mb-4">
-            <!-- 格子选项将在这里动态生成 -->
-        </div>
-        <div class="flex justify-end space-x-2">
-            <button onclick="closeCellImageModal()" class="px-4 py-2 border rounded-md">取消</button>
+    <!-- 添加格子选择模态框 -->
+    <div id="cellSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-[30vw]">
+            <h3 class="text-lg font-medium mb-4">选择要替换的格子</h3>
+            <div id="cellSelectContainer" class="grid mb-4">
+                <!-- 格子选项将在这里动态生成 -->
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeCellSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 添加格子选择模态框 -->
-<div id="cellSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-[30vw]">
-        <h3 class="text-lg font-medium mb-4">选择要替换的格子</h3>
-        <div id="cellSelectContainer" class="grid mb-4">
-            <!-- 格子选项将在这里动态生成 -->
-        </div>
-        <div class="flex justify-end space-x-2">
-            <button onclick="closeCellSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
-        </div>
-    </div>
-</div>
-
-<!-- 添加水印选择模态框 -->
-<div id="watermarkModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-[500px]">
-        <h3 class="text-lg font-medium mb-4">选择水印设置</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">选择水印图片:</label>
-                <div id="watermarkList" class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
-                    <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
-                         onclick="selectWatermark(null)">
-                        <div class="h-16 flex items-center justify-center text-gray-500">
-                            不使用水印
+    <!-- 添加水印选择模态框 -->
+    <div id="watermarkModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-[500px]">
+            <h3 class="text-lg font-medium mb-4">选择水印设置</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">选择水印图片:</label>
+                    <div id="watermarkList" class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                        <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
+                            onclick="selectWatermark(null)">
+                            <div class="h-16 flex items-center justify-center text-gray-500">
+                                不使用水印
+                            </div>
+                            <div class="text-xs text-center truncate mt-1">无水印</div>
                         </div>
-                        <div class="text-xs text-center truncate mt-1">无水印</div>
-                    </div>
-                    ${watermarks.map(watermark => `
+                        ${watermarks.map(watermark => `
                         <div class="watermark-item relative cursor-pointer border rounded p-2 ${selectedWatermark?.id === watermark.id ? 'border-pink-500' : ''}"
-                             onclick="selectWatermark(`${watermark.id}`)">
-                            <button 
-                                onclick="event.stopPropagation(); deleteWatermark(`${watermark.id}`)"
+                            onclick="selectWatermark(`${watermark.id}`)">
+                            <button onclick="event.stopPropagation(); deleteWatermark(`${watermark.id}`)"
                                 class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity flex items-center justify-center"
-                                title="删除水印"
-                            >
+                                title="删除水印">
                                 ×
                             </button>
                             <img src="${watermark.image}" class="w-full h-16 object-contain">
                             <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
                         </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">选择水印位置:</label>
-                <div class="grid grid-cols-3 gap-2">
-                    <button class="watermark-position p-2 border rounded" data-position="top-left">左上</button>
-                    <button class="watermark-position p-2 border rounded" data-position="top-center">上中</button>
-                    <button class="watermark-position p-2 border rounded" data-position="top-right">右上</button>
-                    <button class="watermark-position p-2 border rounded" data-position="middle-left">左中</button>
-                    <button class="watermark-position p-2 border rounded bg-pink-500 text-white" data-position="center">中心</button>
-                    <button class="watermark-position p-2 border rounded" data-position="middle-right">右中</button>
-                    <button class="watermark-position p-2 border rounded" data-position="bottom-left">左下</button>
-                    <button class="watermark-position p-2 border rounded" data-position="bottom-center">下中</button>
-                    <button class="watermark-position p-2 border rounded" data-position="bottom-right">右下</button>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">选择水印位置:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="watermark-position p-2 border rounded" data-position="top-left">左上</button>
+                        <button class="watermark-position p-2 border rounded" data-position="top-center">上中</button>
+                        <button class="watermark-position p-2 border rounded" data-position="top-right">右上</button>
+                        <button class="watermark-position p-2 border rounded" data-position="middle-left">左中</button>
+                        <button class="watermark-position p-2 border rounded bg-pink-500 text-white"
+                            data-position="center">中心</button>
+                        <button class="watermark-position p-2 border rounded" data-position="middle-right">右中</button>
+                        <button class="watermark-position p-2 border rounded" data-position="bottom-left">左下</button>
+                        <button class="watermark-position p-2 border rounded" data-position="bottom-center">下中</button>
+                        <button class="watermark-position p-2 border rounded" data-position="bottom-right">右下</button>
+                    </div>
                 </div>
-            </div>
-            <div class="flex justify-end space-x-2">
-                <button onclick="closeWatermarkModal()" class="px-4 py-2 border rounded-md">取消</button>
-                <button onclick="generateFinalImage()" class="px-4 py-2 bg-pink-500 text-white rounded-md">确定</button>
+                <div class="flex justify-end space-x-2">
+                    <button onclick="closeWatermarkModal()" class="px-4 py-2 border rounded-md">取消</button>
+                    <button onclick="generateFinalImage()"
+                        class="px-4 py-2 bg-pink-500 text-white rounded-md">确定</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- 添加历史记录编辑模态框 -->
-<div id="historyEditModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-96">
-        <h3 class="text-lg font-medium mb-4">修改内容</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">剧名</label>
-                <input type="text" id="historyTitleInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">划重点</label>
-                <input type="text" id="historyHighlightInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-            </div>
-            <div class="flex justify-end space-x-2">
-                <button onclick="closeHistoryEditModal()" class="px-4 py-2 border rounded-md">取消</button>
-                <button onclick="saveHistoryEdit()" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+    <!-- 添加历史记录编辑模态框 -->
+    <div id="historyEditModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-medium mb-4">修改内容</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">剧名</label>
+                    <input type="text" id="historyTitleInput"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">划重点</label>
+                    <input type="text" id="historyHighlightInput"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                </div>
+                <div class="flex justify-end space-x-2">
+                    <button onclick="closeHistoryEditModal()" class="px-4 py-2 border rounded-md">取消</button>
+                    <button onclick="saveHistoryEdit()" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    let currentEditingCell = null;
-    let gridData = [];
-    let pendingHistoryItem = null; // 存储待应用的历史记录项
-    let currentTemplate = null;
+    <script>
+        let currentEditingCell = null;
+        let gridData = [];
+        let pendingHistoryItem = null; // 存储待应用的历史记录项
+        let currentTemplate = null;
 
-    // 添加 IndexedDB 相关代码
-    const dbName = 'gridHistoryDB';
-    const storeName = 'history';
-    let db;
+        // 添加 IndexedDB 相关代码
+        const dbName = 'gridHistoryDB';
+        const storeName = 'history';
+        let db;
 
-    // 添加水印相关变量
-    let selectedWatermark = null;
-    let selectedPosition = 'center';
-    const watermarkStoreName = 'watermarks';
+        // 添加水印相关变量
+        let selectedWatermark = null;
+        let selectedPosition = 'center';
+        const watermarkStoreName = 'watermarks';
 
-    // 添加历史记录编辑相关变量和函数
-    let currentEditingHistory = null;
+        // 添加历史记录编辑相关变量和函数
+        let currentEditingHistory = null;
 
-    // 添加超时Promise包装函数
-    function withTimeout(promise, timeout) {
-        return Promise.race([
-            promise,
-            new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('操作超时')), timeout)
-            )
-        ]);
-    }
+        // 添加超时Promise包装函数
+        function withTimeout(promise, timeout) {
+            return Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('操作超时')), timeout)
+                )
+            ]);
+        }
 
-    // 初始化数据库
-    async function initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, 2); // 版本号改为2
+        // 初始化数据库
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 2); // 版本号改为2
 
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                db = request.result;
-                resolve(db);
-            };
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
 
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    const store = db.createObjectStore(storeName, { keyPath: 'id' });
-                    store.createIndex('timestamp', 'timestamp');
-                    store.createIndex('filename', 'filename');
-                }
-                if (!db.objectStoreNames.contains(watermarkStoreName)) {
-                    const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
-                    watermarkStore.createIndex('filename', 'filename');
-                }
-            };
-        });
-    }
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        const store = db.createObjectStore(storeName, { keyPath: 'id' });
+                        store.createIndex('timestamp', 'timestamp');
+                        store.createIndex('filename', 'filename');
+                    }
+                    if (!db.objectStoreNames.contains(watermarkStoreName)) {
+                        const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
+                        watermarkStore.createIndex('filename', 'filename');
+                    }
+                };
+            });
+        }
 
-    function initializeGrid(size) {
-        const container = document.getElementById('gridContainer');
-        // 设置容器样式为等比缩放
-        container.style.width = '100%';
-        container.style.maxWidth = '1000px'; // 可以调整最大显示宽度
-        container.style.display = 'grid';
-        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-        container.style.gap = '0';
-        container.innerHTML = '';
-        gridData = [];
+        function initializeGrid(size) {
+            const container = document.getElementById('gridContainer');
+            // 设置容器样式为等比缩放
+            container.style.width = '100%';
+            container.style.maxWidth = '1000px'; // 可以调整最大显示宽度
+            container.style.display = 'grid';
+            container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            container.style.gap = '0';
+            container.innerHTML = '';
+            gridData = [];
 
-        for (let i = 0; i < size * size; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'grid-cell';
-            cell.innerHTML = `
+            for (let i = 0; i < size * size; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.innerHTML = `
                     <div class="flex items-center justify-center h-full">
                         <span class="text-gray-400">点击添加内容</span>
                     </div>
                 `;
-            cell.addEventListener('click', () => openEditModal(i));
-            container.appendChild(cell);
-            gridData[i] = null;
+                cell.addEventListener('click', () => openEditModal(i));
+                container.appendChild(cell);
+                gridData[i] = null;
+            }
         }
-    }
 
-    function openEditModal(index) {
-        currentEditingCell = index;
-        document.getElementById('editModal').classList.remove('hidden');
+        function openEditModal(index) {
+            currentEditingCell = index;
+            document.getElementById('editModal').classList.remove('hidden');
 
-        // 清空所有输入和预览
-        document.getElementById('imageInput').value = '';
-        document.getElementById('titleInput').value = '';
-        document.getElementById('actorInput').value = '';
-        document.getElementById('highlightInput').value = '';
-        document.getElementById('imagePreviewContainer').innerHTML = '';
+            // 清空所有输入和预览
+            document.getElementById('imageInput').value = '';
+            document.getElementById('titleInput').value = '';
+            document.getElementById('actorInput').value = '';
+            document.getElementById('highlightInput').value = '';
+            document.getElementById('imagePreviewContainer').innerHTML = '';
 
-        // 如果已有数据，填充表单
-        if (gridData[index]) {
-            document.getElementById('titleInput').value = gridData[index].title || '';
-            document.getElementById('actorInput').value = gridData[index].actor || '';
-            document.getElementById('highlightInput').value = gridData[index].highlight || '';
+            // 如果已有数据，填充表单
+            if (gridData[index]) {
+                document.getElementById('titleInput').value = gridData[index].title || '';
+                document.getElementById('actorInput').value = gridData[index].actor || '';
+                document.getElementById('highlightInput').value = gridData[index].highlight || '';
 
-            // 显示已有图片预览
-            if (gridData[index].image) {
-                const previewContainer = document.getElementById('imagePreviewContainer');
-                previewContainer.innerHTML = `
+                // 显示已有图片预览
+                if (gridData[index].image) {
+                    const previewContainer = document.getElementById('imagePreviewContainer');
+                    previewContainer.innerHTML = `
                         <img src="${gridData[index].image}" class="mt-2 max-w-full h-32 object-contain">
                     `;
-            }
-        }
-    }
-
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-        currentEditingCell = null;
-        // 清空表单
-        document.getElementById('imageInput').value = '';
-        document.getElementById('titleInput').value = '';
-        document.getElementById('actorInput').value = '';
-        document.getElementById('highlightInput').value = '';
-    }
-
-    // 修改 generatePreviewImage 函数
-    async function generatePreviewImage(data) {
-        const FIXED_SIZE = 720;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        canvas.width = FIXED_SIZE;
-        canvas.height = FIXED_SIZE;
-
-        // 绘制白色背景
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, FIXED_SIZE, FIXED_SIZE);
-
-        // 加载并绘制图片
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-
-        try {
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-                img.src = data.image;
-            });
-
-            // 计算图片绘制尺寸
-            // 强制宽度为720，高度按比例计算
-            const scale = FIXED_SIZE / img.width;
-            const drawWidth = FIXED_SIZE;
-            const drawHeight = img.height * scale;
-            const drawX = 0;
-            const drawY = 0; // 靠上对齐
-
-            // 绘制图片
-            ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
-
-            // 设置文字阴影效果
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-            ctx.shadowBlur = 4;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-
-            // 绘制文字
-            ctx.fillStyle = 'white';
-            const fontSize = FIXED_SIZE * 0.06;
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textBaseline = 'top';
-
-            // 绘制演员名称 - 右对齐，保留右侧间距
-            const actorText = `★ ${data.actor || ''}`;
-            const actorMetrics = ctx.measureText(actorText);
-            ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.08);
-
-            // 绘制搜索关键词 - 只在有关键词时才显示
-            if (data.searchKeyword) {
-                ctx.fillStyle = 'white';
-                ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.08);
-
-                // 计算前缀文本宽度
-                const prefixWidth = ctx.measureText('跨克嗖索[').width;
-
-                // 绘制关键词部分（红色）
-                ctx.fillStyle = '#ff4444';
-                ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.08);
-
-                // 绘制后缀括号（白色）
-                ctx.fillStyle = 'white';
-                const keywordWidth = ctx.measureText(data.searchKeyword).width;
-                ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.08);
-            }
-
-            // 绘制剧名 - 向上移动位置
-            ctx.font = `bold ${FIXED_SIZE * 0.1}px sans-serif`;
-            ctx.fillText(data.title || '', FIXED_SIZE * 0.05, FIXED_SIZE * 0.65); // 从0.75改为0.7
-
-            // 绘制划重点 - 支持多行文本
-            ctx.fillStyle = '#ff4444';
-            ctx.font = `${FIXED_SIZE * 0.05}px sans-serif`;
-            const highlightText = `划重点：${data.highlight || ''}`;
-            const maxWidth = FIXED_SIZE * 0.9; // 最大宽度为90%的画布宽度
-            const lineHeight = FIXED_SIZE * 0.06; // 行高
-            const startY = FIXED_SIZE * 0.78; // 从0.85改为0.78，增加与剧名的间距
-
-            // 文本换行处理函数
-            function wrapText(text, x, y, maxWidth, lineHeight) {
-                const words = text.split('');
-                let line = '';
-                let y0 = y;
-
-                for (let n = 0; n < words.length; n++) {
-                    const testLine = line + words[n];
-                    const metrics = ctx.measureText(testLine);
-                    const testWidth = metrics.width;
-
-                    if (testWidth > maxWidth && n > 0) {
-                        ctx.fillText(line, x, y0);
-                        line = words[n];
-                        y0 += lineHeight;
-                    } else {
-                        line = testLine;
-                    }
                 }
-                ctx.fillText(line, x, y0);
             }
-
-            // 应用文本换行
-            wrapText(highlightText, FIXED_SIZE * 0.05, startY, maxWidth, lineHeight);
-
-            // 在绘制完所有文字后，清除阴影设置
-            ctx.shadowColor = 'transparent';
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-
-            return canvas.toDataURL('image/jpeg', 0.8);
-        } catch (error) {
-            console.error('图片生成失败:', error);
-            return null;
         }
-    }
 
-    // 修改 updateCell 函数
-    async function updateCell(index, data, saveToHistory = true) {
-        const cell = document.getElementById('gridContainer').children[index];
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            currentEditingCell = null;
+            // 清空表单
+            document.getElementById('imageInput').value = '';
+            document.getElementById('titleInput').value = '';
+            document.getElementById('actorInput').value = '';
+            document.getElementById('highlightInput').value = '';
+        }
 
-        // 生成预览图片
-        const previewImageUrl = await generatePreviewImage(data);
+        // 修改 generatePreviewImage 函数
+        async function generatePreviewImage(data) {
+            const FIXED_SIZE = 720;
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-        if (previewImageUrl) {
-            cell.innerHTML = `
+            canvas.width = FIXED_SIZE;
+            canvas.height = FIXED_SIZE;
+
+            // 绘制白色背景
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, FIXED_SIZE, FIXED_SIZE);
+
+            // 加载并绘制图片
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            try {
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = data.image;
+                });
+
+                // 计算图片绘制尺寸
+                // 强制宽度为720，高度按比例计算
+                const scale = FIXED_SIZE / img.width;
+                const drawWidth = FIXED_SIZE;
+                const drawHeight = img.height * scale;
+                const drawX = 0;
+                const drawY = 0; // 靠上对齐
+
+                // 绘制图片
+                ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+
+                // 设置文字阴影效果
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                // 绘制文字
+                ctx.fillStyle = 'white';
+                const fontSize = FIXED_SIZE * 0.06;
+                ctx.font = `bold ${fontSize}px sans-serif`;
+                ctx.textBaseline = 'top';
+
+                // 绘制演员名称 - 右对齐，保留右侧间距
+                const actorText = `★ ${data.actor || ''}`;
+                const actorMetrics = ctx.measureText(actorText);
+                ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.08);
+
+                // 绘制搜索关键词 - 只在有关键词时才显示
+                if (data.searchKeyword) {
+                    ctx.fillStyle = 'white';
+                    ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.08);
+
+                    // 计算前缀文本宽度
+                    const prefixWidth = ctx.measureText('跨克嗖索[').width;
+
+                    // 绘制关键词部分（红色）
+                    ctx.fillStyle = '#ff4444';
+                    ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.08);
+
+                    // 绘制后缀括号（白色）
+                    ctx.fillStyle = 'white';
+                    const keywordWidth = ctx.measureText(data.searchKeyword).width;
+                    ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.08);
+                }
+
+                // 绘制剧名 - 向上移动位置
+                ctx.font = `bold ${FIXED_SIZE * 0.1}px sans-serif`;
+                ctx.fillText(data.title || '', FIXED_SIZE * 0.05, FIXED_SIZE * 0.65); // 从0.75改为0.7
+
+                // 绘制划重点 - 支持多行文本
+                ctx.fillStyle = '#ff4444';
+                ctx.font = `${FIXED_SIZE * 0.05}px sans-serif`;
+                const highlightText = `划重点：${data.highlight || ''}`;
+                const maxWidth = FIXED_SIZE * 0.9; // 最大宽度为90%的画布宽度
+                const lineHeight = FIXED_SIZE * 0.06; // 行高
+                const startY = FIXED_SIZE * 0.78; // 从0.85改为0.78，增加与剧名的间距
+
+                // 文本换行处理函数
+                function wrapText(text, x, y, maxWidth, lineHeight) {
+                    const words = text.split('');
+                    let line = '';
+                    let y0 = y;
+
+                    for (let n = 0; n < words.length; n++) {
+                        const testLine = line + words[n];
+                        const metrics = ctx.measureText(testLine);
+                        const testWidth = metrics.width;
+
+                        if (testWidth > maxWidth && n > 0) {
+                            ctx.fillText(line, x, y0);
+                            line = words[n];
+                            y0 += lineHeight;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    ctx.fillText(line, x, y0);
+                }
+
+                // 应用文本换行
+                wrapText(highlightText, FIXED_SIZE * 0.05, startY, maxWidth, lineHeight);
+
+                // 在绘制完所有文字后，清除阴影设置
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                return canvas.toDataURL('image/jpeg', 0.8);
+            } catch (error) {
+                console.error('图片生成失败:', error);
+                return null;
+            }
+        }
+
+        // 修改 updateCell 函数
+        async function updateCell(index, data, saveToHistory = true) {
+            const cell = document.getElementById('gridContainer').children[index];
+
+            // 生成预览图片
+            const previewImageUrl = await generatePreviewImage(data);
+
+            if (previewImageUrl) {
+                cell.innerHTML = `
                     <div class="image-container">
                         <img src="${previewImageUrl}" draggable="false">
                     </div>
                 `;
 
-            // 如果需要保存到历史记录，使用 saveToHistory
-            if (saveToHistory) {
-                delete data.shouldSaveToHistory;
-                await saveToHistory(data);
-            }
-        } else {
-            cell.innerHTML = `
+                // 如果需要保存到历史记录，使用 saveToHistory
+                if (saveToHistory) {
+                    delete data.shouldSaveToHistory;
+                    await saveToHistory(data);
+                }
+            } else {
+                cell.innerHTML = `
                     <div class="flex items-center justify-center h-full">
                         <span class="text-gray-400">图片加载失败</span>
                     </div>
                 `;
+            }
+
+            cell.addEventListener('click', () => openEditModal(index));
         }
 
-        cell.addEventListener('click', () => openEditModal(index));
-    }
+        // 保存历史记录
+        async function saveToHistory(data) {
+            if (!db) await initDB();
 
-    // 保存历史记录
-    async function saveToHistory(data) {
-        if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
 
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readwrite');
-            const store = transaction.objectStore(storeName);
+                // 确保数据包含必要的字段
+                const historyItem = {
+                    ...data,
+                    id: Date.now() + Math.random(),
+                    timestamp: new Date().toISOString(),
+                    actor: data.actor || '', // 确保演员名称字段存在
+                    filename: data.filename || '' // 确保文件名字段存在
+                };
 
-            // 确保数据包含必要的字段
-            const historyItem = {
-                ...data,
-                id: Date.now() + Math.random(),
-                timestamp: new Date().toISOString(),
-                actor: data.actor || '', // 确保演员名称字段存在
-                filename: data.filename || '' // 确保文件名字段存在
-            };
+                const request = store.add(historyItem);
+                request.onsuccess = () => resolve(historyItem);
+                request.onerror = () => reject(request.error);
+            });
+        }
 
-            const request = store.add(historyItem);
-            request.onsuccess = () => resolve(historyItem);
-            request.onerror = () => reject(request.error);
-        });
-    }
+        // 获取所有历史记录
+        async function getAllHistory() {
+            if (!db) await initDB();
 
-    // 获取所有历史记录
-    async function getAllHistory() {
-        if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.index('timestamp').getAll();
 
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.index('timestamp').getAll();
+                request.onsuccess = () => {
+                    const results = request.result.reverse(); // 最新的记录在前面
+                    console.log('获取到的历史记录数量:', results.length);
+                    resolve(results);
+                };
+                request.onerror = () => {
+                    console.error('获取历史记录失败:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
 
-            request.onsuccess = () => {
-                const results = request.result.reverse(); // 最新的记录在前面
-                console.log('获取到的历史记录数量:', results.length);
-                resolve(results);
-            };
-            request.onerror = () => {
-                console.error('获取历史记录失败:', request.error);
-                reject(request.error);
-            };
-        });
-    }
+        // 删除历史记录
+        async function deleteHistoryItem(id) {
+            if (!db) await initDB();
 
-    // 删除历史记录
-    async function deleteHistoryItem(id) {
-        if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                const request = store.delete(id);
 
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readwrite');
-            const store = transaction.objectStore(storeName);
-            const request = store.delete(id);
+                request.onsuccess = () => {
+                    updateHistoryDisplay();
+                    resolve();
+                };
+                request.onerror = () => reject(request.error);
+            });
+        }
 
-            request.onsuccess = () => {
-                updateHistoryDisplay();
-                resolve();
-            };
-            request.onerror = () => reject(request.error);
-        });
-    }
+        // 修改 updateHistoryDisplay 函数
+        async function updateHistoryDisplay() {
+            try {
+                const container = document.getElementById('historyContainer');
+                const history = await getAllHistory();
+                console.log('获取到的历史记录:', history);
 
-    // 修改 updateHistoryDisplay 函数
-    async function updateHistoryDisplay() {
-        try {
-            const container = document.getElementById('historyContainer');
-            const history = await getAllHistory();
-            console.log('获取到的历史记录:', history);
+                // 按文件名前缀分组
+                const groups = groupHistoryByPrefix(history);
+                console.log('分组后的历史记录:', groups);
 
-            // 按文件名前缀分组
-            const groups = groupHistoryByPrefix(history);
-            console.log('分组后的历史记录:', groups);
-
-            // 生成分组标题行
-            container.innerHTML = `
+                // 生成分组标题行
+                container.innerHTML = `
                 <div class="col-span-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
                     ${Object.entries(groups).map(([prefix, items]) => `
                         <div
@@ -635,39 +645,39 @@
                 `).join('')}
             `;
 
-            // 自动展开第一个分组
-            const firstGroup = Object.keys(groups)[0];
-            if (firstGroup) {
-                const groupElement = document.getElementById(`group-${firstGroup}`);
-                if (groupElement) {
-                    groupElement.classList.remove('hidden');
+                // 自动展开第一个分组
+                const firstGroup = Object.keys(groups)[0];
+                if (firstGroup) {
+                    const groupElement = document.getElementById(`group-${firstGroup}`);
+                    if (groupElement) {
+                        groupElement.classList.remove('hidden');
+                    }
                 }
+
+                console.log('历史记录显示更新完成');
+            } catch (error) {
+                console.error('更新历史记录显示失败:', error);
             }
-
-            console.log('历史记录显示更新完成');
-        } catch (error) {
-            console.error('更新历史记录显示失败:', error);
         }
-    }
 
-    // 添加切换分组显示的函数
-    function toggleGroupContent(prefix) {
-        const groupContent = document.getElementById(`group-${prefix}`);
-        if (groupContent) {
-            // 隐藏其他所有分组
-            document.querySelectorAll('.group-content').forEach(el => {
-                if (el.id !== `group-${prefix}`) {
-                    el.classList.add('hidden');
-                }
-            });
-            // 切换当前分组的显示状态
-            groupContent.classList.toggle('hidden');
+        // 添加切换分组显示的函数
+        function toggleGroupContent(prefix) {
+            const groupContent = document.getElementById(`group-${prefix}`);
+            if (groupContent) {
+                // 隐藏其他所有分组
+                document.querySelectorAll('.group-content').forEach(el => {
+                    if (el.id !== `group-${prefix}`) {
+                        el.classList.add('hidden');
+                    }
+                });
+                // 切换当前分组的显示状态
+                groupContent.classList.toggle('hidden');
+            }
         }
-    }
 
-    // 添加新的CSS样式
-    const style = document.createElement('style');
-    style.textContent = `
+        // 添加新的CSS样式
+        const style = document.createElement('style');
+        style.textContent = `
         /* 组标题样式 */
         .group-header {
             transition: all 0.2s;
@@ -691,128 +701,128 @@
         /* 保持其他现有样式 */
         ${style.textContent}
     `;
-    document.head.appendChild(style);
+        document.head.appendChild(style);
 
-    // 修改 groupHistoryByPrefix 函数
-    function groupHistoryByPrefix(history) {
-        const groups = {};
-        const usedCombinations = new Set(); // 用于记录已使用的演员名称和图片组合
+        // 修改 groupHistoryByPrefix 函数
+        function groupHistoryByPrefix(history) {
+            const groups = {};
+            const usedCombinations = new Set(); // 用于记录已使用的演员名称和图片组合
 
-        history.forEach(item => {
-            if (!item.filename) return;
+            history.forEach(item => {
+                if (!item.filename) return;
 
-            // 获取文件名（不包括扩展名）
-            const filename = item.filename;
-            const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+                // 获取文件名（不包括扩展名）
+                const filename = item.filename;
+                const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
 
-            // 创建唯一标识：演员名称 + 图片文件名
-            const uniqueKey = `${item.actor || ''}_${nameWithoutExt}`;
+                // 创建唯一标识：演员名称 + 图片文件名
+                const uniqueKey = `${item.actor || ''}_${nameWithoutExt}`;
 
-            // 如果这个组合已经存在，跳过
-            if (usedCombinations.has(uniqueKey)) return;
-            usedCombinations.add(uniqueKey);
+                // 如果这个组合已经存在，跳过
+                if (usedCombinations.has(uniqueKey)) return;
+                usedCombinations.add(uniqueKey);
 
-            // 使用演员名称作为分组键
-            const groupKey = item.actor || '未分类';
+                // 使用演员名称作为分组键
+                const groupKey = item.actor || '未分类';
 
-            if (!groups[groupKey]) {
-                groups[groupKey] = [];
-            }
-            groups[groupKey].push(item);
-        });
-
-        // 对每个分组内的项目按时间戳排序（最新的在前）
-        Object.values(groups).forEach(group => {
-            group.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        });
-
-        // 对分组键按字母顺序排序
-        const sortedGroups = {};
-        Object.keys(groups).sort().forEach(key => {
-            sortedGroups[key] = groups[key];
-        });
-
-        return sortedGroups;
-    }
-
-    // 修改 applyHistoryItem 函数
-    async function applyHistoryItem(id) {
-        try {
-            const transaction = db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(id);
-
-            request.onsuccess = () => {
-                const item = request.result;
-                if (!item) return;
-
-                const searchKeyword = document.getElementById('searchKeyword').value;
-                const size = parseInt(document.getElementById('gridSize').value);
-                const editMode = document.getElementById('editMode').value;
-
-                if (editMode === 'column') {
-                    // 列复制模式的逻辑保持不变
-                    let emptyColIndex = -1;
-                    for (let col = 0; col < size; col++) {
-                        if (!gridData[col]) {
-                            emptyColIndex = col;
-                            break;
-                        }
-                    }
-
-                    if (emptyColIndex === -1) {
-                        showColumnSelectModal({...item, searchKeyword});
-                        return;
-                    }
-
-                    for (let row = 0; row < size; row++) {
-                        const index = row * size + emptyColIndex;
-                        gridData[index] = {
-                            ...item,
-                            searchKeyword,
-                            offsetX: 0,
-                            offsetY: 0
-                        };
-                        updateCell(index, gridData[index]);
-                    }
-                } else {
-                    // 格子唯一模式：显示格子选择模态框
-                    showCellSelectModal({...item, searchKeyword});
+                if (!groups[groupKey]) {
+                    groups[groupKey] = [];
                 }
-            };
+                groups[groupKey].push(item);
+            });
 
-            request.onerror = () => {
-                console.error('获取历史记录失败:', request.error);
-            };
-        } catch (error) {
-            console.error('应用历史记录失败:', error);
+            // 对每个分组内的项目按时间戳排序（最新的在前）
+            Object.values(groups).forEach(group => {
+                group.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            });
+
+            // 对分组键按字母顺序排序
+            const sortedGroups = {};
+            Object.keys(groups).sort().forEach(key => {
+                sortedGroups[key] = groups[key];
+            });
+
+            return sortedGroups;
         }
-    }
 
-    // 添加格子选择模态框相关函数
-    function showCellSelectModal(historyItem) {
-        pendingHistoryItem = historyItem;
-        const modal = document.getElementById('cellSelectModal');
-        const container = document.getElementById('cellSelectContainer');
-        const size = parseInt(document.getElementById('gridSize').value);
+        // 修改 applyHistoryItem 函数
+        async function applyHistoryItem(id) {
+            try {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.get(id);
 
-        // 设置网格列数
-        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-        container.innerHTML = '';
+                request.onsuccess = () => {
+                    const item = request.result;
+                    if (!item) return;
 
-        // 生成格子选项
-        for (let i = 0; i < size * size; i++) {
-            const row = Math.floor(i / size);
-            const col = i % size;
-            const data = gridData[i];
-            const preview = data ? `
+                    const searchKeyword = document.getElementById('searchKeyword').value;
+                    const size = parseInt(document.getElementById('gridSize').value);
+                    const editMode = document.getElementById('editMode').value;
+
+                    if (editMode === 'column') {
+                        // 列复制模式的逻辑保持不变
+                        let emptyColIndex = -1;
+                        for (let col = 0; col < size; col++) {
+                            if (!gridData[col]) {
+                                emptyColIndex = col;
+                                break;
+                            }
+                        }
+
+                        if (emptyColIndex === -1) {
+                            showColumnSelectModal({ ...item, searchKeyword });
+                            return;
+                        }
+
+                        for (let row = 0; row < size; row++) {
+                            const index = row * size + emptyColIndex;
+                            gridData[index] = {
+                                ...item,
+                                searchKeyword,
+                                offsetX: 0,
+                                offsetY: 0
+                            };
+                            updateCell(index, gridData[index]);
+                        }
+                    } else {
+                        // 格子唯一模式：显示格子选择模态框
+                        showCellSelectModal({ ...item, searchKeyword });
+                    }
+                };
+
+                request.onerror = () => {
+                    console.error('获取历史记录失败:', request.error);
+                };
+            } catch (error) {
+                console.error('应用历史记录失败:', error);
+            }
+        }
+
+        // 添加格子选择模态框相关函数
+        function showCellSelectModal(historyItem) {
+            pendingHistoryItem = historyItem;
+            const modal = document.getElementById('cellSelectModal');
+            const container = document.getElementById('cellSelectContainer');
+            const size = parseInt(document.getElementById('gridSize').value);
+
+            // 设置网格列数
+            container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            container.innerHTML = '';
+
+            // 生成格子选项
+            for (let i = 0; i < size * size; i++) {
+                const row = Math.floor(i / size);
+                const col = i % size;
+                const data = gridData[i];
+                const preview = data ? `
                 <div class="flex flex-col items-center">
                     <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
                     <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
                 </div>
             ` : '<div class="text-gray-400">空格</div>';
 
-            container.innerHTML += `
+                container.innerHTML += `
                 <div
                     onclick="applyCellHistoryItem(${i})"
                     class="cursor-pointer border rounded p-1 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
@@ -821,66 +831,66 @@
                     ${preview}
                 </div>
             `;
+            }
+
+            modal.classList.remove('hidden');
         }
 
-        modal.classList.remove('hidden');
-    }
+        function closeCellSelectModal() {
+            document.getElementById('cellSelectModal').classList.add('hidden');
+            pendingHistoryItem = null;
+        }
 
-    function closeCellSelectModal() {
-        document.getElementById('cellSelectModal').classList.add('hidden');
-        pendingHistoryItem = null;
-    }
+        async function applyCellHistoryItem(index) {
+            if (!pendingHistoryItem) return;
 
-    async function applyCellHistoryItem(index) {
-        if (!pendingHistoryItem) return;
+            gridData[index] = {
+                ...pendingHistoryItem,
+                offsetX: 0,
+                offsetY: 0
+            };
 
-        gridData[index] = {
-            ...pendingHistoryItem,
-            offsetX: 0,
-            offsetY: 0
-        };
+            // 更新格子UI
+            const cell = document.getElementById('gridContainer').children[index];
+            const previewImageUrl = await generatePreviewImage(gridData[index]);
 
-        // 更新格子UI
-        const cell = document.getElementById('gridContainer').children[index];
-        const previewImageUrl = await generatePreviewImage(gridData[index]);
-
-        if (previewImageUrl) {
-            cell.innerHTML = `
+            if (previewImageUrl) {
+                cell.innerHTML = `
                 <div class="image-container">
                     <img src="${previewImageUrl}" draggable="false">
                 </div>
             `;
-            cell.addEventListener('click', () => openEditModal(index));
-        }
+                cell.addEventListener('click', () => openEditModal(index));
+            }
 
-        // 更新模态框中的格子预览
-        const modalCell = document.getElementById('cellSelectContainer').children[index];
-        if (modalCell) {
-            modalCell.innerHTML = `
+            // 更新模态框中的格子预览
+            const modalCell = document.getElementById('cellSelectContainer').children[index];
+            if (modalCell) {
+                modalCell.innerHTML = `
                 <div class="text-xs font-medium mb-1">格子 ${index + 1}</div>
                 <div class="flex flex-col items-center">
                     <img src="${gridData[index].image}" class="w-12 h-12 object-cover rounded mb-1">
                     <div class="text-xs text-gray-500 truncate w-full text-center">${gridData[index].title || ''}</div>
                 </div>
             `;
+            }
+
+            closeCellSelectModal();
         }
 
-        closeCellSelectModal();
-    }
+        // 修改 showColumnSelectModal 函数
+        async function showColumnSelectModal(historyItem) {
+            pendingHistoryItem = historyItem;
+            const modal = document.getElementById('columnSelectModal');
+            const container = document.getElementById('columnSelectContainer');
+            const size = parseInt(document.getElementById('gridSize').value);
 
-    // 修改 showColumnSelectModal 函数
-    async function showColumnSelectModal(historyItem) {
-        pendingHistoryItem = historyItem;
-        const modal = document.getElementById('columnSelectModal');
-        const container = document.getElementById('columnSelectContainer');
-        const size = parseInt(document.getElementById('gridSize').value);
-
-        // 生成列选项
-        container.innerHTML = '';
-        for (let col = 0; col < size; col++) {
-            const firstCellIndex = col;
-            const data = gridData[firstCellIndex];
-            const preview = data ? `
+            // 生成列选项
+            container.innerHTML = '';
+            for (let col = 0; col < size; col++) {
+                const firstCellIndex = col;
+                const data = gridData[firstCellIndex];
+                const preview = data ? `
                     <div class="flex space-x-2">
                         <div class="w-12 h-12 flex-shrink-0">
                             <img src="${data.image}" class="w-full h-full object-cover rounded">
@@ -892,7 +902,7 @@
                     </div>
                 ` : '<div class="text-gray-400">空列</div>';
 
-            container.innerHTML += `
+                container.innerHTML += `
                     <div
                         onclick="applyHistoryItemToColumn(${col})"
                         class="cursor-pointer border rounded p-2 hover:bg-gray-100"
@@ -901,282 +911,282 @@
                         ${preview}
                     </div>
                 `;
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    // 修改 applyHistoryItemToColumn 函数
-    async function applyHistoryItemToColumn(colIndex) {
-        if (!pendingHistoryItem) return;
-
-        const searchKeyword = document.getElementById('searchKeyword').value;
-        const size = parseInt(document.getElementById('gridSize').value);
-
-        // 更新整列数据
-        for (let row = 0; row < size; row++) {
-            const index = row * size + colIndex;
-            gridData[index] = {
-                ...pendingHistoryItem,
-                searchKeyword,
-                offsetX: 0,
-                offsetY: 0
-            };
-            updateCell(index, gridData[index]);
-        }
-
-        closeColumnSelectModal();
-    }
-
-    function closeColumnSelectModal() {
-        document.getElementById('columnSelectModal').classList.add('hidden');
-        pendingHistoryItem = null;
-    }
-
-    // 添加关键词更新函数
-    function updateSearchKeyword(keyword) {
-        const size = parseInt(document.getElementById('gridSize').value);
-        const totalCells = size * size;
-
-        // 更新所有已有内容的格子
-        for (let i = 0; i < totalCells; i++) {
-            if (gridData[i]) {
-                gridData[i].searchKeyword = keyword;
-                updateCell(i, gridData[i]);
-            }
-        }
-    }
-
-    // 修改 saveCell 函数
-    async function saveCell() {
-        const imageFile = document.getElementById('imageInput').files[0];
-        const title = document.getElementById('titleInput').value;
-        const actor = document.getElementById('actorInput').value;
-        const highlight = document.getElementById('highlightInput').value;
-        const searchKeyword = document.getElementById('searchKeyword').value;
-        const editMode = document.getElementById('editMode').value;
-
-        // 如果没有选择新图片但有旧数据，保留旧图片
-        if (!imageFile && gridData[currentEditingCell]) {
-            const updatedData = {
-                ...gridData[currentEditingCell],
-                title,
-                actor,
-                highlight,
-                searchKeyword
-            };
-
-            // 先保存到历史记录（只保存一次）
-            if (updatedData.shouldSaveToHistory) {
-                delete updatedData.shouldSaveToHistory;
-                await saveToHistory(updatedData);
             }
 
-            if (editMode === 'column') {
-                // 列复制模式：更新整列数据
-                const size = parseInt(document.getElementById('gridSize').value);
-                const colIndex = currentEditingCell % size;
-                for (let row = 0; row < size; row++) {
-                    const index = row * size + colIndex;
-                    gridData[index] = {...updatedData};
-                    await updateCell(index, gridData[index], false);
+            modal.classList.remove('hidden');
+        }
+
+        // 修改 applyHistoryItemToColumn 函数
+        async function applyHistoryItemToColumn(colIndex) {
+            if (!pendingHistoryItem) return;
+
+            const searchKeyword = document.getElementById('searchKeyword').value;
+            const size = parseInt(document.getElementById('gridSize').value);
+
+            // 更新整列数据
+            for (let row = 0; row < size; row++) {
+                const index = row * size + colIndex;
+                gridData[index] = {
+                    ...pendingHistoryItem,
+                    searchKeyword,
+                    offsetX: 0,
+                    offsetY: 0
+                };
+                updateCell(index, gridData[index]);
+            }
+
+            closeColumnSelectModal();
+        }
+
+        function closeColumnSelectModal() {
+            document.getElementById('columnSelectModal').classList.add('hidden');
+            pendingHistoryItem = null;
+        }
+
+        // 添加关键词更新函数
+        function updateSearchKeyword(keyword) {
+            const size = parseInt(document.getElementById('gridSize').value);
+            const totalCells = size * size;
+
+            // 更新所有已有内容的格子
+            for (let i = 0; i < totalCells; i++) {
+                if (gridData[i]) {
+                    gridData[i].searchKeyword = keyword;
+                    updateCell(i, gridData[i]);
                 }
-            } else {
-                // 格子唯一模式：只更新当前格子
-                gridData[currentEditingCell] = {...updatedData};
-                await updateCell(currentEditingCell, gridData[currentEditingCell], false);
             }
-
-            closeEditModal();
-            return;
         }
 
-        if (!imageFile) {
-            alert('请选择图片');
-            return;
-        }
+        // 修改 saveCell 函数
+        async function saveCell() {
+            const imageFile = document.getElementById('imageInput').files[0];
+            const title = document.getElementById('titleInput').value;
+            const actor = document.getElementById('actorInput').value;
+            const highlight = document.getElementById('highlightInput').value;
+            const searchKeyword = document.getElementById('searchKeyword').value;
+            const editMode = document.getElementById('editMode').value;
 
-        const reader = new FileReader();
-        reader.onload = async function(e) {
-            const newData = {
-                image: e.target.result,
-                title,
-                actor,
-                highlight,
-                searchKeyword,
-                filename: imageFile.name,
-                offsetX: 0,
-                offsetY: 0
-            };
+            // 如果没有选择新图片但有旧数据，保留旧图片
+            if (!imageFile && gridData[currentEditingCell]) {
+                const updatedData = {
+                    ...gridData[currentEditingCell],
+                    title,
+                    actor,
+                    highlight,
+                    searchKeyword
+                };
 
-            // 先保存到历史记录（只保存一次）
-            await saveToHistory(newData);
-
-            if (editMode === 'column') {
-                // 列复制模式：更新整列数据
-                const size = parseInt(document.getElementById('gridSize').value);
-                const colIndex = currentEditingCell % size;
-                for (let row = 0; row < size; row++) {
-                    const index = row * size + colIndex;
-                    gridData[index] = {...newData};
-                    await updateCell(index, gridData[index], false);
+                // 先保存到历史记录（只保存一次）
+                if (updatedData.shouldSaveToHistory) {
+                    delete updatedData.shouldSaveToHistory;
+                    await saveToHistory(updatedData);
                 }
-            } else {
-                // 格子唯一模式：只更新当前格子
-                gridData[currentEditingCell] = {...newData};
-                await updateCell(currentEditingCell, gridData[currentEditingCell], false);
-            }
 
-            closeEditModal();
-        };
-        reader.readAsDataURL(imageFile);
-    }
+                if (editMode === 'column') {
+                    // 列复制模式：更新整列数据
+                    const size = parseInt(document.getElementById('gridSize').value);
+                    const colIndex = currentEditingCell % size;
+                    for (let row = 0; row < size; row++) {
+                        const index = row * size + colIndex;
+                        gridData[index] = { ...updatedData };
+                        await updateCell(index, gridData[index], false);
+                    }
+                } else {
+                    // 格子唯一模式：只更新当前格子
+                    gridData[currentEditingCell] = { ...updatedData };
+                    await updateCell(currentEditingCell, gridData[currentEditingCell], false);
+                }
 
-    // 修改图片预览处理函数
-    document.getElementById('imageInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const previewContainer = document.getElementById('imagePreviewContainer');
-                previewContainer.innerHTML = ''; // 清空现有预览
-                const preview = document.createElement('img');
-                preview.src = e.target.result;
-                preview.className = 'mt-2 max-w-full h-32 object-contain';
-                previewContainer.appendChild(preview);
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // 初始化事件监听
-    document.getElementById('gridSize').addEventListener('change', (e) => {
-        initializeGrid(parseInt(e.target.value));
-    });
-
-    document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
-    document.getElementById('saveEdit').addEventListener('click', saveCell);
-
-    // 修改生成图片的函数
-    async function generateGridImage() {
-        const size = parseInt(document.getElementById('gridSize').value);
-        const promises = [];
-
-        // 收集所有格子的预览图片生成Promise
-        for (let i = 0; i < size * size; i++) {
-            if (gridData[i]) {
-                promises.push(generatePreviewImage(gridData[i]));
-            }
-        }
-
-        // 等待所有预览图片生成完成
-        const previewImages = await Promise.all(promises);
-
-        // 创建最终的画布
-        const CELL_SIZE = 720; // 每个格子的大小与预览图片一致
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-
-        canvas.width = CELL_SIZE * size;
-        canvas.height = CELL_SIZE * size;
-
-        // 绘制白色背景
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // 将预览图片绘制到对应位置
-        let imageIndex = 0;
-        for (let i = 0; i < size * size; i++) {
-            if (gridData[i]) {
-                const row = Math.floor(i / size);
-                const col = i % size;
-                const x = col * CELL_SIZE;
-                const y = row * CELL_SIZE;
-
-                const img = new Image();
-                await new Promise((resolve) => {
-                    img.onload = resolve;
-                    img.src = previewImages[imageIndex];
-                });
-
-                ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
-                imageIndex++;
-            }
-        }
-
-        // 导出图片
-        const link = document.createElement('a');
-        link.download = `grid-${Date.now()}.jpg`;
-        link.href = canvas.toDataURL('image/jpeg', 0.8);
-        link.click();
-    }
-
-    // 修改初始化代码，添加超时机制
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            await withTimeout(initDB(), 3000); // 3秒超时
-            await updateHistoryDisplay();
-        } catch (error) {
-            console.error('初始化失败:', error);
-            if (error.message === '操作超时') {
-                alert('数据库初始化超时，请刷新页面重试');
-            } else {
-                alert('数据库初始化失败，请刷新页面重试');
-            }
-        }
-    });
-
-    // 初始化4x4网格
-    initializeGrid(4);
-
-    // 修改生成图片按钮的事件监听器
-    document.getElementById('generateImage').addEventListener('click', () => {
-        // 移除旧的事件监听器
-        document.getElementById('generateImage').removeEventListener('click', generateGridImage);
-        // 显示水印选择模态框
-        showWatermarkModal();
-    });
-
-    // 修改 showWatermarkModal 函数，确保正确显示水印列表
-    async function showWatermarkModal() {
-        const modal = document.getElementById('watermarkModal');
-        modal.classList.remove('hidden');
-
-        // 更新水印列表
-        await updateWatermarkList();
-
-        // 重新绑定水印位置选择事件
-        document.querySelectorAll('.watermark-position').forEach(btn => {
-            // 移除旧的事件监听器
-            btn.replaceWith(btn.cloneNode(true));
-        });
-
-        // 添加新的事件监听器
-        document.querySelectorAll('.watermark-position').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.watermark-position').forEach(b => {
-                    b.classList.remove('bg-pink-500', 'text-white');
-                });
-                e.target.classList.add('bg-pink-500', 'text-white');
-                selectedPosition = e.target.dataset.position;
-            });
-        });
-    }
-
-    // 修改 updateWatermarkList 函数，确保 ID 正确传递
-    async function updateWatermarkList() {
-        try {
-            const watermarks = await getAllWatermarks();
-            console.log('获取到的水印列表:', watermarks);
-
-            const container = document.getElementById('watermarkList');
-            if (!container) {
-                console.error('未找到水印列表容器');
+                closeEditModal();
                 return;
             }
 
-            // 添加一个取消选择的选项
-            container.innerHTML = `
+            if (!imageFile) {
+                alert('请选择图片');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const newData = {
+                    image: e.target.result,
+                    title,
+                    actor,
+                    highlight,
+                    searchKeyword,
+                    filename: imageFile.name,
+                    offsetX: 0,
+                    offsetY: 0
+                };
+
+                // 先保存到历史记录（只保存一次）
+                await saveToHistory(newData);
+
+                if (editMode === 'column') {
+                    // 列复制模式：更新整列数据
+                    const size = parseInt(document.getElementById('gridSize').value);
+                    const colIndex = currentEditingCell % size;
+                    for (let row = 0; row < size; row++) {
+                        const index = row * size + colIndex;
+                        gridData[index] = { ...newData };
+                        await updateCell(index, gridData[index], false);
+                    }
+                } else {
+                    // 格子唯一模式：只更新当前格子
+                    gridData[currentEditingCell] = { ...newData };
+                    await updateCell(currentEditingCell, gridData[currentEditingCell], false);
+                }
+
+                closeEditModal();
+            };
+            reader.readAsDataURL(imageFile);
+        }
+
+        // 修改图片预览处理函数
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const previewContainer = document.getElementById('imagePreviewContainer');
+                    previewContainer.innerHTML = ''; // 清空现有预览
+                    const preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.className = 'mt-2 max-w-full h-32 object-contain';
+                    previewContainer.appendChild(preview);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 初始化事件监听
+        document.getElementById('gridSize').addEventListener('change', (e) => {
+            initializeGrid(parseInt(e.target.value));
+        });
+
+        document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+        document.getElementById('saveEdit').addEventListener('click', saveCell);
+
+        // 修改生成图片的函数
+        async function generateGridImage() {
+            const size = parseInt(document.getElementById('gridSize').value);
+            const promises = [];
+
+            // 收集所有格子的预览图片生成Promise
+            for (let i = 0; i < size * size; i++) {
+                if (gridData[i]) {
+                    promises.push(generatePreviewImage(gridData[i]));
+                }
+            }
+
+            // 等待所有预览图片生成完成
+            const previewImages = await Promise.all(promises);
+
+            // 创建最终的画布
+            const CELL_SIZE = 720; // 每个格子的大小与预览图片一致
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = CELL_SIZE * size;
+            canvas.height = CELL_SIZE * size;
+
+            // 绘制白色背景
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 将预览图片绘制到对应位置
+            let imageIndex = 0;
+            for (let i = 0; i < size * size; i++) {
+                if (gridData[i]) {
+                    const row = Math.floor(i / size);
+                    const col = i % size;
+                    const x = col * CELL_SIZE;
+                    const y = row * CELL_SIZE;
+
+                    const img = new Image();
+                    await new Promise((resolve) => {
+                        img.onload = resolve;
+                        img.src = previewImages[imageIndex];
+                    });
+
+                    ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
+                    imageIndex++;
+                }
+            }
+
+            // 导出图片
+            const link = document.createElement('a');
+            link.download = `grid-${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.8);
+            link.click();
+        }
+
+        // 修改初始化代码，添加超时机制
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await withTimeout(initDB(), 3000); // 3秒超时
+                await updateHistoryDisplay();
+            } catch (error) {
+                console.error('初始化失败:', error);
+                if (error.message === '操作超时') {
+                    alert('数据库初始化超时，请刷新页面重试');
+                } else {
+                    alert('数据库初始化失败，请刷新页面重试');
+                }
+            }
+        });
+
+        // 初始化4x4网格
+        initializeGrid(4);
+
+        // 修改生成图片按钮的事件监听器
+        document.getElementById('generateImage').addEventListener('click', () => {
+            // 移除旧的事件监听器
+            document.getElementById('generateImage').removeEventListener('click', generateGridImage);
+            // 显示水印选择模态框
+            showWatermarkModal();
+        });
+
+        // 修改 showWatermarkModal 函数，确保正确显示水印列表
+        async function showWatermarkModal() {
+            const modal = document.getElementById('watermarkModal');
+            modal.classList.remove('hidden');
+
+            // 更新水印列表
+            await updateWatermarkList();
+
+            // 重新绑定水印位置选择事件
+            document.querySelectorAll('.watermark-position').forEach(btn => {
+                // 移除旧的事件监听器
+                btn.replaceWith(btn.cloneNode(true));
+            });
+
+            // 添加新的事件监听器
+            document.querySelectorAll('.watermark-position').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.watermark-position').forEach(b => {
+                        b.classList.remove('bg-pink-500', 'text-white');
+                    });
+                    e.target.classList.add('bg-pink-500', 'text-white');
+                    selectedPosition = e.target.dataset.position;
+                });
+            });
+        }
+
+        // 修改 updateWatermarkList 函数，确保 ID 正确传递
+        async function updateWatermarkList() {
+            try {
+                const watermarks = await getAllWatermarks();
+                console.log('获取到的水印列表:', watermarks);
+
+                const container = document.getElementById('watermarkList');
+                if (!container) {
+                    console.error('未找到水印列表容器');
+                    return;
+                }
+
+                // 添加一个取消选择的选项
+                container.innerHTML = `
                 <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
                      onclick="selectWatermark(null)">
                     <div class="h-16 flex items-center justify-center text-gray-500">
@@ -1199,528 +1209,540 @@
                 </div>
             `).join('');
 
-            console.log('水印列表已更新');
-        } catch (error) {
-            console.error('更新水印列表失败:', error);
+                console.log('水印列表已更新');
+            } catch (error) {
+                console.error('更新水印列表失败:', error);
+            }
         }
-    }
 
-    // 修改 selectWatermark 函数，支持取消选择
-    window.selectWatermark = async function(id) {
-        try {
-            console.log('尝试选择水印，ID:', id);
+        // 修改 selectWatermark 函数，支持取消选择
+        window.selectWatermark = async function (id) {
+            try {
+                console.log('尝试选择水印，ID:', id);
 
-            if (id === null) {
-                selectedWatermark = null;
-                console.log('已取消选择水印');
-            } else {
-                const watermarks = await getAllWatermarks();
-                console.log('可用的水印列表:', watermarks);
+                if (id === null) {
+                    selectedWatermark = null;
+                    console.log('已取消选择水印');
+                } else {
+                    const watermarks = await getAllWatermarks();
+                    console.log('可用的水印列表:', watermarks);
 
-                selectedWatermark = watermarks.find(w => w.id === id);
-                console.log('找到的水印:', selectedWatermark);
+                    selectedWatermark = watermarks.find(w => w.id === id);
+                    console.log('找到的水印:', selectedWatermark);
 
-                if (!selectedWatermark) {
-                    console.error('未找到对应ID的水印:', id);
+                    if (!selectedWatermark) {
+                        console.error('未找到对应ID的水印:', id);
+                        return;
+                    }
+                }
+
+                await updateWatermarkList();
+                console.log('水印选择完成，当前选中:', selectedWatermark);
+            } catch (error) {
+                console.error('选择水印失败:', error);
+            }
+        };
+
+        // 修改 handleWatermarkUpload 函数，使用整数 ID
+        async function handleWatermarkUpload(event) {
+            try {
+                const files = Array.from(event.target.files);
+                console.log('选择的文件:', files);
+
+                const existingWatermarks = await getAllWatermarks();
+                const existingFilenames = new Set(existingWatermarks.map(w => w.filename));
+
+                for (const file of files) {
+                    if (existingFilenames.has(file.name)) {
+                        console.log(`跳过重复水印: ${file.name}`);
+                        continue;
+                    }
+
+                    const imageDataUrl = await readFileAsDataURL(file);
+                    await saveWatermark({
+                        id: Date.now(), // 移除 Math.random()，只使用时间戳
+                        filename: file.name,
+                        image: imageDataUrl
+                    });
+                    console.log(`水印已保存: ${file.name}`);
+                }
+
+                await updateWatermarkList();
+                console.log('水印列表已更新完成');
+            } catch (error) {
+                console.error('处理水印上传失败:', error);
+            }
+        }
+
+        // 辅助函数：读取文件为DataURL
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 修改随机组合函数名和逻辑
+        async function randomCombineFromAllGroups() {
+            try {
+                const history = await getAllHistory();
+                const editMode = document.getElementById('editMode').value;
+                const size = parseInt(document.getElementById('gridSize').value);
+                const searchKeyword = document.getElementById('searchKeyword').value;
+
+                if (history.length === 0) {
+                    alert('没有可用的数据进行随机组合');
                     return;
                 }
-            }
 
-            await updateWatermarkList();
-            console.log('水印选择完成，当前选中:', selectedWatermark);
-        } catch (error) {
-            console.error('选择水印失败:', error);
-        }
-    };
+                // 清空现有数据
+                gridData = new Array(size * size).fill(null);
 
-    // 修改 handleWatermarkUpload 函数，使用整数 ID
-    async function handleWatermarkUpload(event) {
-        try {
-            const files = Array.from(event.target.files);
-            console.log('选择的文件:', files);
+                if (editMode === 'column') {
+                    // 列复制模式：按分组随机选择
+                    const groups = groupHistoryByPrefix(history);
+                    const groupNames = Object.keys(groups);
 
-            const existingWatermarks = await getAllWatermarks();
-            const existingFilenames = new Set(existingWatermarks.map(w => w.filename));
+                    if (groupNames.length === 0) return;
 
-            for (const file of files) {
-                if (existingFilenames.has(file.name)) {
-                    console.log(`跳过重复水印: ${file.name}`);
-                    continue;
+                    // 随机选择最多4个不同的分组
+                    const selectedGroups = shuffle(groupNames).slice(0, 4);
+                    const selectedItems = selectedGroups.map(groupName => {
+                        const groupItems = groups[groupName] || [];
+                        return groupItems[Math.floor(Math.random() * groupItems.length)];
+                    }).filter(item => item);
+
+                    // 填充列数据
+                    selectedItems.forEach((item, index) => {
+                        if (index < size) {
+                            for (let row = 0; row < size; row++) {
+                                const cellIndex = row * size + index;
+                                gridData[cellIndex] = {
+                                    ...item,
+                                    searchKeyword,
+                                    offsetX: 0,
+                                    offsetY: 0
+                                };
+                                updateCell(cellIndex, gridData[cellIndex], false);
+                            }
+                        }
+                    });
+                } else {
+                    // 格子唯一模式：按组轮流随机填充
+                    const groups = groupHistoryByPrefix(history);
+                    const groupNames = Object.keys(groups);
+
+                    if (groupNames.length === 0) return;
+
+                    const totalCells = size * size;
+                    let currentCell = 0;
+
+                    while (currentCell < totalCells) {
+                        // 对每个组随机选择一个项目
+                        const roundItems = groupNames.map(groupName => {
+                            const groupItems = groups[groupName];
+                            return groupItems[Math.floor(Math.random() * groupItems.length)];
+                        });
+
+                        // 打乱本轮选中的项目顺序
+                        const shuffledRoundItems = shuffle(roundItems);
+
+                        // 填充格子
+                        for (const item of shuffledRoundItems) {
+                            if (currentCell < totalCells) {
+                                gridData[currentCell] = {
+                                    ...item,
+                                    searchKeyword,
+                                    offsetX: 0,
+                                    offsetY: 0
+                                };
+                                updateCell(currentCell, gridData[currentCell], false);
+                                currentCell++;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
                 }
 
-                const imageDataUrl = await readFileAsDataURL(file);
-                await saveWatermark({
-                    id: Date.now(), // 移除 Math.random()，只使用时间戳
-                    filename: file.name,
-                    image: imageDataUrl
-                });
-                console.log(`水印已保存: ${file.name}`);
+            } catch (error) {
+                console.error('随机组合失败:', error);
+                alert('随机组合失败，请重试');
             }
-
-            await updateWatermarkList();
-            console.log('水印列表已更新完成');
-        } catch (error) {
-            console.error('处理水印上传失败:', error);
         }
-    }
 
-    // 辅助函数：读取文件为DataURL
-    function readFileAsDataURL(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
+        // 数组随机打乱函数
+        function shuffle(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
 
-    // 修改随机组合函数名和逻辑
-    async function randomCombineFromAllGroups() {
-        try {
-            const history = await getAllHistory();
-            const editMode = document.getElementById('editMode').value;
-            const size = parseInt(document.getElementById('gridSize').value);
-            const searchKeyword = document.getElementById('searchKeyword').value;
+        // 保存水印到IndexedDB
+        async function saveWatermark(watermark) {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([watermarkStoreName], 'readwrite');
+                const store = transaction.objectStore(watermarkStoreName);
+                console.log('正在保存水印:', watermark);
+                const request = store.add(watermark);
+                request.onsuccess = () => {
+                    console.log('水印保存成功:', watermark.id);
+                    resolve(watermark);
+                };
+                request.onerror = () => {
+                    console.error('水印保存失败:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
 
-            if (history.length === 0) {
-                alert('没有可用的数据进行随机组合');
+        // 获取所有水印
+        async function getAllWatermarks() {
+            if (!db) await initDB();
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction([watermarkStoreName], 'readonly');
+                const store = transaction.objectStore(watermarkStoreName);
+                const request = store.getAll();
+                request.onsuccess = () => {
+                    console.log('获取所有水印成功:', request.result);
+                    resolve(request.result);
+                };
+                request.onerror = () => {
+                    console.error('获取水印失败:', request.error);
+                    reject(request.error);
+                };
+            });
+        }
+
+        // 处理编辑按钮点击
+        async function handleEditClick(id) {
+            try {
+                console.log('开始编辑历史记录:', id);
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.get(id);
+
+                request.onsuccess = () => {
+                    const item = request.result;
+                    if (!item) {
+                        console.error('未找到历史记录:', id);
+                        return;
+                    }
+
+                    console.log('获取到历史记录:', item);
+                    currentEditingHistory = item;
+
+                    // 填充表单
+                    const titleInput = document.getElementById('historyTitleInput');
+                    const highlightInput = document.getElementById('historyHighlightInput');
+
+                    titleInput.value = item.title || '';
+                    highlightInput.value = item.highlight || '';
+
+                    console.log('表单已填充:', {
+                        title: titleInput.value,
+                        highlight: highlightInput.value
+                    });
+
+                    // 显示模态框
+                    document.getElementById('historyEditModal').classList.remove('hidden');
+                };
+
+                request.onerror = (error) => {
+                    console.error('获取历史记录失败:', error);
+                };
+            } catch (error) {
+                console.error('编辑历史记录失败:', error);
+            }
+        }
+
+        // 关闭历史记录编辑模态框
+        function closeHistoryEditModal() {
+            document.getElementById('historyEditModal').classList.add('hidden');
+            currentEditingHistory = null;
+        }
+
+        // 修改 saveHistoryEdit 函数
+        async function saveHistoryEdit() {
+            if (!currentEditingHistory) {
+                console.error('没有正在编辑的历史记录');
                 return;
             }
 
-            // 清空现有数据
-            gridData = new Array(size * size).fill(null);
+            try {
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
 
-            if (editMode === 'column') {
-                // 列复制模式：按分组随机选择
-                const groups = groupHistoryByPrefix(history);
-                const groupNames = Object.keys(groups);
+                // 先获取最新的记录
+                const getRequest = store.get(currentEditingHistory.id);
 
-                if (groupNames.length === 0) return;
-
-                // 随机选择最多4个不同的分组
-                const selectedGroups = shuffle(groupNames).slice(0, 4);
-                const selectedItems = selectedGroups.map(groupName => {
-                    const groupItems = groups[groupName] || [];
-                    return groupItems[Math.floor(Math.random() * groupItems.length)];
-                }).filter(item => item);
-
-                // 填充列数据
-                selectedItems.forEach((item, index) => {
-                    if (index < size) {
-                        for (let row = 0; row < size; row++) {
-                            const cellIndex = row * size + index;
-                            gridData[cellIndex] = {
-                                ...item,
-                                searchKeyword,
-                                offsetX: 0,
-                                offsetY: 0
-                            };
-                            updateCell(cellIndex, gridData[cellIndex], false);
-                        }
+                getRequest.onsuccess = async () => {
+                    const currentRecord = getRequest.result;
+                    if (!currentRecord) {
+                        console.error('未找到要编辑的记录');
+                        return;
                     }
-                });
-            } else {
-                // 格子唯一模式：从所有历史记录中随机选择
-                const totalCells = size * size;
 
-                // 如果历史记录不够，就循环使用
-                let availableItems = [...history];
-                while (availableItems.length < totalCells) {
-                    availableItems = [...availableItems, ...history];
-                }
-
-                // 随机打乱所有可用项目
-                availableItems = shuffle(availableItems);
-
-                // 填充每个格子
-                for (let i = 0; i < totalCells; i++) {
-                    const item = availableItems[i];
-                    gridData[i] = {
-                        ...item,
-                        searchKeyword,
-                        offsetX: 0,
-                        offsetY: 0
+                    // 更新历史记录
+                    const updatedItem = {
+                        ...currentRecord, // 保留所有原有属性
+                        title: document.getElementById('historyTitleInput').value,
+                        highlight: document.getElementById('historyHighlightInput').value,
+                        timestamp: new Date().toISOString() // 更新时间戳
                     };
-                    updateCell(i, gridData[i], false);
-                }
-            }
 
-        } catch (error) {
-            console.error('随机组合失败:', error);
-            alert('随机组合失败，请重试');
-        }
-    }
+                    // 执行更新
+                    const putRequest = store.put(updatedItem);
 
-    // 数组随机打乱函数
-    function shuffle(array) {
-        const newArray = [...array];
-        for (let i = newArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-        }
-        return newArray;
-    }
+                    putRequest.onsuccess = async () => {
+                        console.log('历史记录更新成功:', updatedItem);
 
-    // 保存水印到IndexedDB
-    async function saveWatermark(watermark) {
-        if (!db) await initDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([watermarkStoreName], 'readwrite');
-            const store = transaction.objectStore(watermarkStoreName);
-            console.log('正在保存水印:', watermark);
-            const request = store.add(watermark);
-            request.onsuccess = () => {
-                console.log('水印保存成功:', watermark.id);
-                resolve(watermark);
-            };
-            request.onerror = () => {
-                console.error('水印保存失败:', request.error);
-                reject(request.error);
-            };
-        });
-    }
+                        // 更新显示
+                        await updateHistoryDisplay();
 
-    // 获取所有水印
-    async function getAllWatermarks() {
-        if (!db) await initDB();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([watermarkStoreName], 'readonly');
-            const store = transaction.objectStore(watermarkStoreName);
-            const request = store.getAll();
-            request.onsuccess = () => {
-                console.log('获取所有水印成功:', request.result);
-                resolve(request.result);
-            };
-            request.onerror = () => {
-                console.error('获取水印失败:', request.error);
-                reject(request.error);
-            };
-        });
-    }
-
-    // 处理编辑按钮点击
-    async function handleEditClick(id) {
-        try {
-            console.log('开始编辑历史记录:', id);
-            const transaction = db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(id);
-
-            request.onsuccess = () => {
-                const item = request.result;
-                if (!item) {
-                    console.error('未找到历史记录:', id);
-                    return;
-                }
-
-                console.log('获取到历史记录:', item);
-                currentEditingHistory = item;
-
-                // 填充表单
-                const titleInput = document.getElementById('historyTitleInput');
-                const highlightInput = document.getElementById('historyHighlightInput');
-
-                titleInput.value = item.title || '';
-                highlightInput.value = item.highlight || '';
-
-                console.log('表单已填充:', {
-                    title: titleInput.value,
-                    highlight: highlightInput.value
-                });
-
-                // 显示模态框
-                document.getElementById('historyEditModal').classList.remove('hidden');
-            };
-
-            request.onerror = (error) => {
-                console.error('获取历史记录失败:', error);
-            };
-        } catch (error) {
-            console.error('编辑历史记录失败:', error);
-        }
-    }
-
-    // 关闭历史记录编辑模态框
-    function closeHistoryEditModal() {
-        document.getElementById('historyEditModal').classList.add('hidden');
-        currentEditingHistory = null;
-    }
-
-    // 修改 saveHistoryEdit 函数
-    async function saveHistoryEdit() {
-        if (!currentEditingHistory) {
-            console.error('没有正在编辑的历史记录');
-            return;
-        }
-
-        try {
-            const transaction = db.transaction([storeName], 'readwrite');
-            const store = transaction.objectStore(storeName);
-
-            // 先获取最新的记录
-            const getRequest = store.get(currentEditingHistory.id);
-
-            getRequest.onsuccess = async () => {
-                const currentRecord = getRequest.result;
-                if (!currentRecord) {
-                    console.error('未找到要编辑的记录');
-                    return;
-                }
-
-                // 更新历史记录
-                const updatedItem = {
-                    ...currentRecord, // 保留所有原有属性
-                    title: document.getElementById('historyTitleInput').value,
-                    highlight: document.getElementById('historyHighlightInput').value,
-                    timestamp: new Date().toISOString() // 更新时间戳
-                };
-
-                // 执行更新
-                const putRequest = store.put(updatedItem);
-
-                putRequest.onsuccess = async () => {
-                    console.log('历史记录更新成功:', updatedItem);
-
-                    // 更新显示
-                    await updateHistoryDisplay();
-
-                    // 更新当前网格中的相关格子
-                    const size = parseInt(document.getElementById('gridSize').value);
-                    for (let i = 0; i < size * size; i++) {
-                        if (gridData[i] && gridData[i].id === currentEditingHistory.id) {
-                            gridData[i] = {...updatedItem};
-                            await updateCell(i, gridData[i], false);
+                        // 更新当前网格中的相关格子
+                        const size = parseInt(document.getElementById('gridSize').value);
+                        for (let i = 0; i < size * size; i++) {
+                            if (gridData[i] && gridData[i].id === currentEditingHistory.id) {
+                                gridData[i] = { ...updatedItem };
+                                await updateCell(i, gridData[i], false);
+                            }
                         }
-                    }
 
-                    // 关闭模态框
-                    closeHistoryEditModal();
+                        // 关闭模态框
+                        closeHistoryEditModal();
+                    };
+
+                    putRequest.onerror = (error) => {
+                        console.error('更新历史记录失败:', error);
+                        alert('保存失败，请重试');
+                    };
                 };
 
-                putRequest.onerror = (error) => {
-                    console.error('更新历史记录失败:', error);
+                getRequest.onerror = (error) => {
+                    console.error('获取历史记录失败:', error);
                     alert('保存失败，请重试');
                 };
-            };
 
-            getRequest.onerror = (error) => {
-                console.error('获取历史记录失败:', error);
+                // 添加事务完成的处理
+                transaction.oncomplete = () => {
+                    console.log('事务完成');
+                };
+
+                transaction.onerror = (error) => {
+                    console.error('事务失败:', error);
+                    alert('保存失败，请重试');
+                };
+
+            } catch (error) {
+                console.error('保存编辑失败:', error);
                 alert('保存失败，请重试');
-            };
-
-            // 添加事务完成的处理
-            transaction.oncomplete = () => {
-                console.log('事务完成');
-            };
-
-            transaction.onerror = (error) => {
-                console.error('事务失败:', error);
-                alert('保存失败，请重试');
-            };
-
-        } catch (error) {
-            console.error('保存编辑失败:', error);
-            alert('保存失败，请重试');
-        }
-    }
-
-    // 添加复制按钮的处理函数
-    async function handleCopyClick(id) {
-        event.stopPropagation(); // 阻止事件冒泡
-
-        try {
-            // 从 IndexedDB 获取对应的记录
-            const transaction = db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(id);
-
-            request.onsuccess = () => {
-                const item = request.result;
-                if (!item) {
-                    console.error('未找到记录:', id);
-                    return;
-                }
-
-                currentTemplate = item;
-                // 打开文件选择对话框
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.multiple = true;
-                input.accept = 'image/*';
-                input.onchange = handleMultipleImages;
-                input.click();
-            };
-
-            request.onerror = () => {
-                console.error('获取记录失败:', request.error);
-            };
-        } catch (error) {
-            console.error('复制操作失败:', error);
-        }
-    }
-
-    // 处理多个图片的函数
-    async function handleMultipleImages(event) {
-        if (!currentTemplate) return;
-
-        const files = Array.from(event.target.files);
-        const history = await getAllHistory();
-        const existingFilenames = new Set(history.map(item => item.filename));
-
-        for (const file of files) {
-            if (existingFilenames.has(file.name)) {
-                console.log(`跳过重复文件: ${file.name}`);
-                continue;
             }
+        }
+
+        // 添加复制按钮的处理函数
+        async function handleCopyClick(id) {
+            event.stopPropagation(); // 阻止事件冒泡
 
             try {
-                const imageDataUrl = await readFileAsDataURL(file);
-                const newItem = {
-                    ...currentTemplate,
-                    id: Date.now() + Math.random(), // 确保新ID唯一
-                    image: imageDataUrl,
-                    filename: file.name,
-                    timestamp: new Date().toISOString() // 更新时间戳
+                // 从 IndexedDB 获取对应的记录
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.get(id);
+
+                request.onsuccess = () => {
+                    const item = request.result;
+                    if (!item) {
+                        console.error('未找到记录:', id);
+                        return;
+                    }
+
+                    currentTemplate = item;
+                    // 打开文件选择对话框
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.multiple = true;
+                    input.accept = 'image/*';
+                    input.onchange = handleMultipleImages;
+                    input.click();
                 };
 
-                await saveToHistory(newItem);
-                existingFilenames.add(file.name);
+                request.onerror = () => {
+                    console.error('获取记录失败:', request.error);
+                };
             } catch (error) {
-                console.error('处理图片失败:', error);
+                console.error('复制操作失败:', error);
             }
         }
 
-        await updateHistoryDisplay();
-        currentTemplate = null;
-    }
+        // 处理多个图片的函数
+        async function handleMultipleImages(event) {
+            if (!currentTemplate) return;
 
-    // 添加关闭水印模态框的函数
-    function closeWatermarkModal() {
-        document.getElementById('watermarkModal').classList.add('hidden');
-        selectedWatermark = null;
-        selectedPosition = 'center'; // 重置水印位置为默认值
+            const files = Array.from(event.target.files);
+            const history = await getAllHistory();
+            const existingFilenames = new Set(history.map(item => item.filename));
 
-        // 重置所有位置按钮的样式
-        document.querySelectorAll('.watermark-position').forEach(btn => {
-            btn.classList.remove('bg-pink-500', 'text-white');
-            if (btn.dataset.position === 'center') {
-                btn.classList.add('bg-pink-500', 'text-white');
-            }
-        });
-    }
+            for (const file of files) {
+                if (existingFilenames.has(file.name)) {
+                    console.log(`跳过重复文件: ${file.name}`);
+                    continue;
+                }
 
-    // 添加关闭格子图片模态框的函数
-    function closeCellImageModal() {
-        document.getElementById('cellImageModal').classList.add('hidden');
-    }
+                try {
+                    const imageDataUrl = await readFileAsDataURL(file);
+                    const newItem = {
+                        ...currentTemplate,
+                        id: Date.now() + Math.random(), // 确保新ID唯一
+                        image: imageDataUrl,
+                        filename: file.name,
+                        timestamp: new Date().toISOString() // 更新时间戳
+                    };
 
-    // 添加生成最终图片的函数（包含水印）
-    async function generateFinalImage() {
-        try {
-            const size = parseInt(document.getElementById('gridSize').value);
-            const CELL_SIZE = 720; // 每个格子的大小
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            canvas.width = CELL_SIZE * size;
-            canvas.height = CELL_SIZE * size;
-
-            // 绘制白色背景
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 绘制所有格子
-            for (let i = 0; i < size * size; i++) {
-                if (gridData[i]) {
-                    const row = Math.floor(i / size);
-                    const col = i % size;
-                    const x = col * CELL_SIZE;
-                    const y = row * CELL_SIZE;
-
-                    // 生成格子预览图片
-                    const previewImageUrl = await generatePreviewImage(gridData[i]);
-                    const img = new Image();
-                    await new Promise((resolve) => {
-                        img.onload = resolve;
-                        img.src = previewImageUrl;
-                    });
-
-                    ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
+                    await saveToHistory(newItem);
+                    existingFilenames.add(file.name);
+                } catch (error) {
+                    console.error('处理图片失败:', error);
                 }
             }
 
-            // 如果选择了水印，添加水印
-            if (selectedWatermark) {
-                const watermarkImg = new Image();
-                await new Promise((resolve) => {
-                    watermarkImg.onload = resolve;
-                    watermarkImg.src = selectedWatermark.image;
-                });
-
-                // 计算水印大小（默认为格子大小的13%）
-                const watermarkSize = CELL_SIZE * 0.13;
-                const aspectRatio = watermarkImg.width / watermarkImg.height;
-                const watermarkWidth = watermarkSize * aspectRatio;
-                const watermarkHeight = watermarkSize;
-
-                // 根据选择的位置计算水印坐标
-                const positions = {
-                    'top-left': { x: 20, y: 20 },
-                    'top-center': { x: (canvas.width - watermarkWidth) / 2, y: 20 },
-                    'top-right': { x: canvas.width - watermarkWidth - 20, y: 20 },
-                    'middle-left': { x: 20, y: (canvas.height - watermarkHeight) / 2 },
-                    'center': { x: (canvas.width - watermarkWidth) / 2, y: (canvas.height - watermarkHeight) / 2 },
-                    'middle-right': { x: canvas.width - watermarkWidth - 20, y: (canvas.height - watermarkHeight) / 2 },
-                    'bottom-left': { x: 20, y: canvas.height - watermarkHeight - 20 },
-                    'bottom-center': { x: (canvas.width - watermarkWidth) / 2, y: canvas.height - watermarkHeight - 20 },
-                    'bottom-right': { x: canvas.width - watermarkWidth - 20, y: canvas.height - watermarkHeight - 20 }
-                };
-
-                const pos = positions[selectedPosition] || positions.center;
-                ctx.drawImage(watermarkImg, pos.x, pos.y, watermarkWidth, watermarkHeight);
-            }
-
-            // 导出最终图片
-            const link = document.createElement('a');
-            link.download = `grid-${Date.now()}.jpg`;
-            link.href = canvas.toDataURL('image/jpeg', 0.8);
-            link.click();
-
-            // 关闭水印模态框
-            closeWatermarkModal();
-
-        } catch (error) {
-            console.error('生成最终图片失败:', error);
-            alert('生成图片失败，请重试');
+            await updateHistoryDisplay();
+            currentTemplate = null;
         }
-    }
 
-    // 添加导出格子图片按钮的事件监听器
-    document.getElementById('generateCellImage').addEventListener('click', () => {
-        showCellImageModal();
-    });
+        // 添加关闭水印模态框的函数
+        function closeWatermarkModal() {
+            document.getElementById('watermarkModal').classList.add('hidden');
+            selectedWatermark = null;
+            selectedPosition = 'center'; // 重置水印位置为默认值
 
-    // 添加显示格子图片选择模态框的函数
-    function showCellImageModal() {
-        const modal = document.getElementById('cellImageModal');
-        const container = document.getElementById('cellImageSelectContainer');
-        const size = parseInt(document.getElementById('gridSize').value);
+            // 重置所有位置按钮的样式
+            document.querySelectorAll('.watermark-position').forEach(btn => {
+                btn.classList.remove('bg-pink-500', 'text-white');
+                if (btn.dataset.position === 'center') {
+                    btn.classList.add('bg-pink-500', 'text-white');
+                }
+            });
+        }
 
-        // 设置网格列数
-        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-        container.innerHTML = '';
+        // 添加关闭格子图片模态框的函数
+        function closeCellImageModal() {
+            document.getElementById('cellImageModal').classList.add('hidden');
+        }
 
-        // 生成格子选项
-        for (let i = 0; i < size * size; i++) {
-            const data = gridData[i];
-            const preview = data ? `
+        // 添加生成最终图片的函数（包含水印）
+        async function generateFinalImage() {
+            try {
+                const size = parseInt(document.getElementById('gridSize').value);
+                const CELL_SIZE = 720; // 每个格子的大小
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = CELL_SIZE * size;
+                canvas.height = CELL_SIZE * size;
+
+                // 绘制白色背景
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // 绘制所有格子
+                for (let i = 0; i < size * size; i++) {
+                    if (gridData[i]) {
+                        const row = Math.floor(i / size);
+                        const col = i % size;
+                        const x = col * CELL_SIZE;
+                        const y = row * CELL_SIZE;
+
+                        // 生成格子预览图片
+                        const previewImageUrl = await generatePreviewImage(gridData[i]);
+                        const img = new Image();
+                        await new Promise((resolve) => {
+                            img.onload = resolve;
+                            img.src = previewImageUrl;
+                        });
+
+                        ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+
+                // 如果选择了水印，添加水印
+                if (selectedWatermark) {
+                    const watermarkImg = new Image();
+                    await new Promise((resolve) => {
+                        watermarkImg.onload = resolve;
+                        watermarkImg.src = selectedWatermark.image;
+                    });
+
+                    // 计算水印大小（默认为格子大小的13%）
+                    const watermarkSize = CELL_SIZE * 0.13;
+                    const aspectRatio = watermarkImg.width / watermarkImg.height;
+                    const watermarkWidth = watermarkSize * aspectRatio;
+                    const watermarkHeight = watermarkSize;
+
+                    // 根据选择的位置计算水印坐标
+                    const positions = {
+                        'top-left': { x: 20, y: 20 },
+                        'top-center': { x: (canvas.width - watermarkWidth) / 2, y: 20 },
+                        'top-right': { x: canvas.width - watermarkWidth - 20, y: 20 },
+                        'middle-left': { x: 20, y: (canvas.height - watermarkHeight) / 2 },
+                        'center': { x: (canvas.width - watermarkWidth) / 2, y: (canvas.height - watermarkHeight) / 2 },
+                        'middle-right': { x: canvas.width - watermarkWidth - 20, y: (canvas.height - watermarkHeight) / 2 },
+                        'bottom-left': { x: 20, y: canvas.height - watermarkHeight - 20 },
+                        'bottom-center': { x: (canvas.width - watermarkWidth) / 2, y: canvas.height - watermarkHeight - 20 },
+                        'bottom-right': { x: canvas.width - watermarkWidth - 20, y: canvas.height - watermarkHeight - 20 }
+                    };
+
+                    const pos = positions[selectedPosition] || positions.center;
+                    ctx.drawImage(watermarkImg, pos.x, pos.y, watermarkWidth, watermarkHeight);
+                }
+
+                // 导出最终图片
+                const link = document.createElement('a');
+                link.download = `grid-${Date.now()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.8);
+                link.click();
+
+                // 关闭水印模态框
+                closeWatermarkModal();
+
+            } catch (error) {
+                console.error('生成最终图片失败:', error);
+                alert('生成图片失败，请重试');
+            }
+        }
+
+        // 添加导出格子图片按钮的事件监听器
+        document.getElementById('generateCellImage').addEventListener('click', () => {
+            showCellImageModal();
+        });
+
+        // 添加显示格子图片选择模态框的函数
+        function showCellImageModal() {
+            const modal = document.getElementById('cellImageModal');
+            const container = document.getElementById('cellImageSelectContainer');
+            const size = parseInt(document.getElementById('gridSize').value);
+
+            // 设置网格列数
+            container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+            container.innerHTML = '';
+
+            // 生成格子选项
+            for (let i = 0; i < size * size; i++) {
+                const data = gridData[i];
+                const preview = data ? `
                 <div class="flex flex-col items-center">
                     <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
                     <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
                 </div>
             ` : '<div class="text-gray-400">空格</div>';
 
-            container.innerHTML += `
+                container.innerHTML += `
                 <div
                     onclick="exportSingleCellImage(${i})"
                     class="cursor-pointer border rounded p-1 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
@@ -1729,264 +1751,268 @@
                     ${preview}
                 </div>
             `;
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    // 添加导出单个格子图片的函数
-    async function exportSingleCellImage(index) {
-        if (!gridData[index]) {
-            alert('该格子没有内容');
-            return;
-        }
-
-        try {
-            // 生成预览图片
-            const previewImageUrl = await generatePreviewImage(gridData[index]);
-            
-            // 创建下载链接
-            const link = document.createElement('a');
-            link.download = `cell-${index + 1}-${Date.now()}.jpg`;
-            link.href = previewImageUrl;
-            link.click();
-
-        } catch (error) {
-            console.error('导出格子图片失败:', error);
-            alert('导出失败，请重试');
-        }
-    }
-
-    
-// 添加删除水印的函数
-async function deleteWatermark(id) {
-    try {
-        if (!db) await initDB();
-        
-        const transaction = db.transaction([watermarkStoreName], 'readwrite');
-        const store = transaction.objectStore(watermarkStoreName);
-        
-        // 如果正在删除当前选中的水印，清除选中状态
-        if (selectedWatermark && selectedWatermark.id === id) {
-            selectedWatermark = null;
-        }
-        
-        await new Promise((resolve, reject) => {
-            const request = store.delete(id);
-            request.onsuccess = resolve;
-            request.onerror = () => reject(request.error);
-        });
-        
-        console.log('水印删除成功:', id);
-        await updateWatermarkList();
-    } catch (error) {
-        console.error('删除水印失败:', error);
-        alert('删除水印失败，请重试');
-    }
-}
-
-// 添加打乱当前网格的函数
-async function shuffleCurrentGrid() {
-    const editMode = document.getElementById('editMode').value;
-    const size = parseInt(document.getElementById('gridSize').value);
-    
-    // 检查是否有内容可以打乱
-    const hasContent = gridData.some(cell => cell !== null);
-    if (!hasContent) {
-        alert('没有可以打乱的内容');
-        return;
-    }
-
-    if (editMode === 'column') {
-        // 列复制模式：只打乱列的顺序
-        const columns = [];
-        
-        // 收集所有非空列
-        for (let col = 0; col < size; col++) {
-            const column = [];
-            let hasContent = false;
-            for (let row = 0; row < size; row++) {
-                const index = row * size + col;
-                column.push(gridData[index]);
-                if (gridData[index]) hasContent = true;
             }
-            if (hasContent) {
-                columns.push(column);
+
+            modal.classList.remove('hidden');
+        }
+
+        // 添加导出单个格子图片的函数
+        async function exportSingleCellImage(index) {
+            if (!gridData[index]) {
+                alert('该格子没有内容');
+                return;
+            }
+
+            try {
+                // 生成预览图片
+                const previewImageUrl = await generatePreviewImage(gridData[index]);
+
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = `cell-${index + 1}-${Date.now()}.jpg`;
+                link.href = previewImageUrl;
+                link.click();
+
+            } catch (error) {
+                console.error('导出格子图片失败:', error);
+                alert('导出失败，请重试');
             }
         }
 
-        // 打乱列的顺序
-        const shuffledColumns = shuffle(columns);
 
-        // 清空现有数据
-        gridData = new Array(size * size).fill(null);
+        // 添加删除水印的函数
+        async function deleteWatermark(id) {
+            try {
+                if (!db) await initDB();
 
-        // 重新填充数据
-        shuffledColumns.forEach((column, colIndex) => {
-            column.forEach((cell, rowIndex) => {
-                if (cell) {
-                    const index = rowIndex * size + colIndex;
-                    gridData[index] = {...cell};
-                    updateCell(index, gridData[index], false);
+                const transaction = db.transaction([watermarkStoreName], 'readwrite');
+                const store = transaction.objectStore(watermarkStoreName);
+
+                // 如果正在删除当前选中的水印，清除选中状态
+                if (selectedWatermark && selectedWatermark.id === id) {
+                    selectedWatermark = null;
                 }
-            });
-        });
-    } else {
-        // 格子唯一模式：打乱所有非空格子
-        const nonEmptyCells = gridData.filter(cell => cell !== null);
-        const shuffledCells = shuffle(nonEmptyCells);
-        
-        // 清空现有数据
-        gridData = new Array(size * size).fill(null);
-        
-        // 获取原有的非空格子位置
-        const nonEmptyIndices = [];
-        for (let i = 0; i < size * size; i++) {
-            if (gridData[i] !== null) {
-                nonEmptyIndices.push(i);
+
+                await new Promise((resolve, reject) => {
+                    const request = store.delete(id);
+                    request.onsuccess = resolve;
+                    request.onerror = () => reject(request.error);
+                });
+
+                console.log('水印删除成功:', id);
+                await updateWatermarkList();
+            } catch (error) {
+                console.error('删除水印失败:', error);
+                alert('删除水印失败，请重试');
             }
         }
-        
-        // 重新填充数据
-        shuffledCells.forEach((cell, index) => {
-            const position = nonEmptyIndices[index] || index;
-            gridData[position] = {...cell};
-            updateCell(position, gridData[position], false);
-        });
-    }
-}
 
-</script>
+        // 添加打乱当前网格的函数
+        async function shuffleCurrentGrid() {
+            const editMode = document.getElementById('editMode').value;
+            const size = parseInt(document.getElementById('gridSize').value);
 
-<style>
-    .watermark-item {
-        transition: all 0.2s;
-        position: relative;
-        group-hover:opacity-100;
-    }
+            // 检查是否有内容可以打乱
+            const hasContent = gridData.some(cell => cell !== null);
+            if (!hasContent) {
+                alert('没有可以打乱的内容');
+                return;
+            }
 
-    .watermark-item:hover {
-        border-color: #ec4899;
-    }
+            if (editMode === 'column') {
+                // 列复制模式：只打乱列的顺序
+                const columns = [];
 
-    .watermark-item:hover button {
-        opacity: 1;
-    }
-    /* 确保导出时的图片比例正确 */
-    #gridContainer {
-        aspect-ratio: 1;
-    }
+                // 收集所有非空列
+                for (let col = 0; col < size; col++) {
+                    const column = [];
+                    let hasContent = false;
+                    for (let row = 0; row < size; row++) {
+                        const index = row * size + col;
+                        column.push(gridData[index]);
+                        if (gridData[index]) hasContent = true;
+                    }
+                    if (hasContent) {
+                        columns.push(column);
+                    }
+                }
 
-    #gridContainer > div {
-        aspect-ratio: 1;
-        border: none;
-        margin: 0;
-        padding: 0;
-    }
+                // 打乱列的顺序
+                const shuffledColumns = shuffle(columns);
 
-    .image-container {
-        position: relative;
-        overflow: hidden;
-        padding-bottom: 100%; /* 保持1:1比例 */
-    }
+                // 清空现有数据
+                gridData = new Array(size * size).fill(null);
 
-    .image-container img {
-        transition: transform 0.1s ease-out;
-        will-change: transform;
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transform-origin: center center; /* 确保变换以中心点为基准 */
-    }
+                // 重新填充数据
+                shuffledColumns.forEach((column, colIndex) => {
+                    column.forEach((cell, rowIndex) => {
+                        if (cell) {
+                            const index = rowIndex * size + colIndex;
+                            gridData[index] = { ...cell };
+                            updateCell(index, gridData[index], false);
+                        }
+                    });
+                });
+            } else {
+                // 格子唯一模式：打乱所有非空格子
+                const nonEmptyCells = gridData.filter(cell => cell !== null);
+                const shuffledCells = shuffle(nonEmptyCells);
 
-    /* 确保导出时的元素位置正确 */
-    #gridContainer .absolute {
-        position: absolute !important;
-    }
+                // 清空现有数据
+                gridData = new Array(size * size).fill(null);
 
-    /* 优化跨克嗖索样式 */
-    #gridContainer .bg-white {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
+                // 获取原有的非空格子位置
+                const nonEmptyIndices = [];
+                for (let i = 0; i < size * size; i++) {
+                    if (gridData[i] !== null) {
+                        nonEmptyIndices.push(i);
+                    }
+                }
 
-    #gridContainer .bg-white span {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-        height: 100%;
-    }
+                // 重新填充数据
+                shuffledCells.forEach((cell, index) => {
+                    const position = nonEmptyIndices[index] || index;
+                    gridData[position] = { ...cell };
+                    updateCell(position, gridData[position], false);
+                });
+            }
+        }
 
-    /* 确保文字不会有额外的行高影响垂直居中 */
-    #gridContainer .leading-none {
-        line-height: 1 !important;
-    }
+    </script>
 
-    /* 历史记录和列选择样式 */
-    #historyContainer > div,
-    #columnSelectContainer > div {
-        background-color: white;
-        transition: all 0.2s;
-    }
+    <style>
+        .watermark-item {
+            transition: all 0.2s;
+            position: relative;
+            group-hover: opacity-100;
+        }
 
-    #historyContainer > div:hover,
-    #columnSelectContainer > div:hover {
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
+        .watermark-item:hover {
+            border-color: #ec4899;
+        }
 
-    /* 图片预览容器样式 */
-    #historyContainer img,
-    #columnSelectContainer img {
-        object-fit: cover;
-        width: 100%;
-        height: 100%;
-    }
+        .watermark-item:hover button {
+            opacity: 1;
+        }
 
-    /* 添加文字阴影效果，提高可读性 */
-    .drop-shadow-lg {
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-    }
+        /* 确保导出时的图片比例正确 */
+        #gridContainer {
+            aspect-ratio: 1;
+        }
 
-    /* 优化下划线样式 */
-    .underline {
-        text-decoration-thickness: 1px;
-        text-underline-offset: 2px;
-    }
+        #gridContainer>div {
+            aspect-ratio: 1;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
 
-    /* 添加文字发光效果 */
-    .glow-text {
-        text-shadow: 0 0 10px rgba(255, 0, 0, 0.8),
-        0 0 20px rgba(255, 0, 0, 0.8),
-        0 0 30px rgba(255, 0, 0, 0.8);
-        font-weight: 600;
-        color: white;
-    }
+        .image-container {
+            position: relative;
+            overflow: hidden;
+            padding-bottom: 100%;
+            /* 保持1:1比例 */
+        }
 
-    /* 添加格子选择模态框样式 */
-    #cellSelectContainer {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
+        .image-container img {
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform-origin: center center;
+            /* 确保变换以中心点为基准 */
+        }
 
-    /* 添加水印相关样式 */
-    .watermark-item {
-        transition: all 0.2s;
-        position: relative;
-        group-hover:opacity-100;
-    }
+        /* 确保导出时的元素位置正确 */
+        #gridContainer .absolute {
+            position: absolute !important;
+        }
 
-    .watermark-item:hover {
-        border-color: #ec4899;
-    }
+        /* 优化跨克嗖索样式 */
+        #gridContainer .bg-white {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
 
-    .watermark-item:hover button {
-        opacity: 1;
-    }
-</style>
+        #gridContainer .bg-white span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            height: 100%;
+        }
+
+        /* 确保文字不会有额外的行高影响垂直居中 */
+        #gridContainer .leading-none {
+            line-height: 1 !important;
+        }
+
+        /* 历史记录和列选择样式 */
+        #historyContainer>div,
+        #columnSelectContainer>div {
+            background-color: white;
+            transition: all 0.2s;
+        }
+
+        #historyContainer>div:hover,
+        #columnSelectContainer>div:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 图片预览容器样式 */
+        #historyContainer img,
+        #columnSelectContainer img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 添加文字阴影效果，提高可读性 */
+        .drop-shadow-lg {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 优化下划线样式 */
+        .underline {
+            text-decoration-thickness: 1px;
+            text-underline-offset: 2px;
+        }
+
+        /* 添加文字发光效果 */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8),
+                0 0 20px rgba(255, 0, 0, 0.8),
+                0 0 30px rgba(255, 0, 0, 0.8);
+            font-weight: 600;
+            color: white;
+        }
+
+        /* 添加格子选择模态框样式 */
+        #cellSelectContainer {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* 添加水印相关样式 */
+        .watermark-item {
+            transition: all 0.2s;
+            position: relative;
+            group-hover: opacity-100;
+        }
+
+        .watermark-item:hover {
+            border-color: #ec4899;
+        }
+
+        .watermark-item:hover button {
+            opacity: 1;
+        }
+    </style>
 </body>
+
 </html>
