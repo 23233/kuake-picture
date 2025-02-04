@@ -156,7 +156,27 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">选择水印图片:</label>
                 <div id="watermarkList" class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
-                    <!-- 水印列表将在这里动态生成 -->
+                    <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
+                         onclick="selectWatermark(null)">
+                        <div class="h-16 flex items-center justify-center text-gray-500">
+                            不使用水印
+                        </div>
+                        <div class="text-xs text-center truncate mt-1">无水印</div>
+                    </div>
+                    ${watermarks.map(watermark => `
+                        <div class="watermark-item relative cursor-pointer border rounded p-2 ${selectedWatermark?.id === watermark.id ? 'border-pink-500' : ''}"
+                             onclick="selectWatermark(`${watermark.id}`)">
+                            <button 
+                                onclick="event.stopPropagation(); deleteWatermark(`${watermark.id}`)"
+                                class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity flex items-center justify-center"
+                                title="删除水印"
+                            >
+                                ×
+                            </button>
+                            <img src="${watermark.image}" class="w-full h-16 object-contain">
+                            <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
             <div>
@@ -1154,10 +1174,17 @@
                     <div class="text-xs text-center truncate mt-1">无水印</div>
                 </div>
             ` + watermarks.map(watermark => `
-                <div class="watermark-item cursor-pointer border rounded p-2 ${selectedWatermark?.id === watermark.id ? 'border-pink-500' : ''}"
+                <div class="watermark-item relative cursor-pointer border rounded p-2 ${selectedWatermark?.id === watermark.id ? 'border-pink-500' : ''}"
                      onclick="selectWatermark(${watermark.id})">
-                <img src="${watermark.image}" class="w-full h-16 object-contain">
-                <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
+                    <button 
+                        onclick="event.stopPropagation(); deleteWatermark(${watermark.id})"
+                        class="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity flex items-center justify-center"
+                        title="删除水印"
+                    >
+                        ×
+                    </button>
+                    <img src="${watermark.image}" class="w-full h-16 object-contain">
+                    <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
                 </div>
             `).join('');
 
@@ -1718,9 +1745,52 @@
             alert('导出失败，请重试');
         }
     }
+
+    
+// 添加删除水印的函数
+async function deleteWatermark(id) {
+    try {
+        if (!db) await initDB();
+        
+        const transaction = db.transaction([watermarkStoreName], 'readwrite');
+        const store = transaction.objectStore(watermarkStoreName);
+        
+        // 如果正在删除当前选中的水印，清除选中状态
+        if (selectedWatermark && selectedWatermark.id === id) {
+            selectedWatermark = null;
+        }
+        
+        await new Promise((resolve, reject) => {
+            const request = store.delete(id);
+            request.onsuccess = resolve;
+            request.onerror = () => reject(request.error);
+        });
+        
+        console.log('水印删除成功:', id);
+        await updateWatermarkList();
+    } catch (error) {
+        console.error('删除水印失败:', error);
+        alert('删除水印失败，请重试');
+    }
+}
+
+
 </script>
 
 <style>
+    .watermark-item {
+        transition: all 0.2s;
+        position: relative;
+        group-hover:opacity-100;
+    }
+
+    .watermark-item:hover {
+        border-color: #ec4899;
+    }
+
+    .watermark-item:hover button {
+        opacity: 1;
+    }
     /* 确保导出时的图片比例正确 */
     #gridContainer {
         aspect-ratio: 1;
@@ -1825,18 +1895,16 @@
     /* 添加水印相关样式 */
     .watermark-item {
         transition: all 0.2s;
+        position: relative;
+        group-hover:opacity-100;
     }
 
     .watermark-item:hover {
         border-color: #ec4899;
     }
 
-    .watermark-position {
-        transition: all 0.2s;
-    }
-
-    .watermark-position:hover {
-        background-color: #fdf2f8;
+    .watermark-item:hover button {
+        opacity: 1;
     }
 </style>
 </body>
