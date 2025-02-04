@@ -48,15 +48,26 @@
     <div>
         <div class="flex justify-between items-center mb-2">
             <label class="block text-sm font-medium text-gray-700">历史记录:</label>
-            <button
+            <div class="flex space-x-2">
+                <button
                     onclick="randomCombineFromAllGroups()"
                     class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-                </svg>
-                <span>随机组合</span>
-            </button>
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>随机组合</span>
+                </button>
+                <button
+                    onclick="shuffleCurrentGrid()"
+                    class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
+                    </svg>
+                    <span>打乱</span>
+                </button>
+            </div>
         </div>
         <div id="historyContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
             <!-- 历史记录将在这里动态生成 -->
@@ -1774,6 +1785,76 @@ async function deleteWatermark(id) {
     }
 }
 
+// 添加打乱当前网格的函数
+async function shuffleCurrentGrid() {
+    const editMode = document.getElementById('editMode').value;
+    const size = parseInt(document.getElementById('gridSize').value);
+    
+    // 检查是否有内容可以打乱
+    const hasContent = gridData.some(cell => cell !== null);
+    if (!hasContent) {
+        alert('没有可以打乱的内容');
+        return;
+    }
+
+    if (editMode === 'column') {
+        // 列复制模式：只打乱列的顺序
+        const columns = [];
+        
+        // 收集所有非空列
+        for (let col = 0; col < size; col++) {
+            const column = [];
+            let hasContent = false;
+            for (let row = 0; row < size; row++) {
+                const index = row * size + col;
+                column.push(gridData[index]);
+                if (gridData[index]) hasContent = true;
+            }
+            if (hasContent) {
+                columns.push(column);
+            }
+        }
+
+        // 打乱列的顺序
+        const shuffledColumns = shuffle(columns);
+
+        // 清空现有数据
+        gridData = new Array(size * size).fill(null);
+
+        // 重新填充数据
+        shuffledColumns.forEach((column, colIndex) => {
+            column.forEach((cell, rowIndex) => {
+                if (cell) {
+                    const index = rowIndex * size + colIndex;
+                    gridData[index] = {...cell};
+                    updateCell(index, gridData[index], false);
+                }
+            });
+        });
+    } else {
+        // 格子唯一模式：打乱所有非空格子
+        const nonEmptyCells = gridData.filter(cell => cell !== null);
+        const shuffledCells = shuffle(nonEmptyCells);
+        
+        // 清空现有数据
+        gridData = new Array(size * size).fill(null);
+        
+        // 获取原有的非空格子位置
+        const nonEmptyIndices = [];
+        for (let i = 0; i < size * size; i++) {
+            if (gridData[i] !== null) {
+                nonEmptyIndices.push(i);
+            }
+        }
+        
+        // 重新填充数据
+        shuffledCells.forEach((cell, index) => {
+            const position = nonEmptyIndices[index] || index;
+            gridData[position] = {...cell};
+            updateCell(position, gridData[position], false);
+        });
+    }
+}
 
 </script>
 
