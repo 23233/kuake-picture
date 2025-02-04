@@ -467,10 +467,13 @@
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
+            // 确保数据包含必要的字段
             const historyItem = {
                 ...data,
                 id: Date.now() + Math.random(),
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                actor: data.actor || '', // 确保演员名称字段存在
+                filename: data.filename || '' // 确保文件名字段存在
             };
 
             const request = store.add(historyItem);
@@ -488,8 +491,15 @@
             const store = transaction.objectStore(storeName);
             const request = store.index('timestamp').getAll();
 
-            request.onsuccess = () => resolve(request.result.reverse());
-            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                const results = request.result.reverse(); // 最新的记录在前面
+                console.log('获取到的历史记录数量:', results.length);
+                resolve(results);
+            };
+            request.onerror = () => {
+                console.error('获取历史记录失败:', request.error);
+                reject(request.error);
+            };
         });
     }
 
@@ -512,74 +522,91 @@
 
     // 修改 updateHistoryDisplay 函数
     async function updateHistoryDisplay() {
-        const container = document.getElementById('historyContainer');
-        const history = await getAllHistory();
+        try {
+            const container = document.getElementById('historyContainer');
+            const history = await getAllHistory();
+            console.log('获取到的历史记录:', history);
 
-        // 按文件名前缀分组
-        const groups = groupHistoryByPrefix(history);
+            // 按文件名前缀分组
+            const groups = groupHistoryByPrefix(history);
+            console.log('分组后的历史记录:', groups);
 
-        // 生成分组标题行
-        container.innerHTML = `
-            <div class="col-span-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+            // 生成分组标题行
+            container.innerHTML = `
+                <div class="col-span-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                    ${Object.entries(groups).map(([prefix, items]) => `
+                        <div 
+                            class="group-header cursor-pointer bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors"
+                            onclick="toggleGroupContent('${prefix.replace(/'/g, "\\'")}')"
+                        >
+                            <div class="text-sm font-medium text-gray-700">
+                                ${prefix} (${items.length}项)
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
                 ${Object.entries(groups).map(([prefix, items]) => `
-                    <div 
-                        class="group-header cursor-pointer bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors"
-                        onclick="toggleGroupContent('${prefix.replace(/'/g, "\\'")}')"
-                    >
-                        <div class="text-sm font-medium text-gray-700">
-                            ${prefix} (${items.length}项)
+                    <div id="group-${prefix}" class="group-content hidden col-span-full mb-4">
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                            ${items.map(item => `
+                                <div class="relative group cursor-pointer border rounded p-2" onclick="applyHistoryItem(${item.id})">
+                                    <div class="flex space-x-2">
+                                        <div class="w-12 h-12 flex-shrink-0">
+                                            <img src="${item.image}" class="w-full h-full object-cover rounded">
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium truncate">${item.title || ''}</div>
+                                            <div class="text-xs text-gray-500 truncate">${item.actor || ''}</div>
+                                        </div>
+                                    </div>
+                                    <div class="absolute top-1 right-1 flex space-x-1">
+                                        <button
+                                            onclick="event.stopPropagation(); handleEditClick(${item.id})"
+                                            class="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="修改"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onclick="event.stopPropagation(); handleCopyClick(${item.id})"
+                                            class="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="复制"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
+                                                <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+                                            </svg>
+                                        </button>
+                                        <button
+                                            onclick="event.stopPropagation(); deleteHistoryItem(${item.id})"
+                                            class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="删除"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
                 `).join('')}
-            </div>
-            ${Object.entries(groups).map(([prefix, items]) => `
-                <div id="group-${prefix}" class="group-content hidden col-span-full mb-4">
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-                        ${items.map(item => `
-                            <div class="relative group cursor-pointer border rounded p-2" onclick="applyHistoryItem(${item.id})">
-                                <div class="flex space-x-2">
-                                    <div class="w-12 h-12 flex-shrink-0">
-                                        <img src="${item.image}" class="w-full h-full object-cover rounded">
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="text-sm font-medium truncate">${item.title || ''}</div>
-                                        <div class="text-xs text-gray-500 truncate">${item.actor || ''}</div>
-                                    </div>
-                                </div>
-                                <div class="absolute top-1 right-1 flex space-x-1">
-                                    <button
-                                        onclick="event.stopPropagation(); handleEditClick(${item.id})"
-                                        class="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="修改"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                                        </svg>
-                                    </button>
-                                    <button
-                                        onclick="event.stopPropagation(); handleCopyClick(${item.id})"
-                                        class="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="复制"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
-                                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
-                                        </svg>
-                                    </button>
-                                    <button
-                                        onclick="event.stopPropagation(); deleteHistoryItem(${item.id})"
-                                        class="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="删除"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `).join('')}
-        `;
+            `;
+
+            // 自动展开第一个分组
+            const firstGroup = Object.keys(groups)[0];
+            if (firstGroup) {
+                const groupElement = document.getElementById(`group-${firstGroup}`);
+                if (groupElement) {
+                    groupElement.classList.remove('hidden');
+                }
+            }
+
+            console.log('历史记录显示更新完成');
+        } catch (error) {
+            console.error('更新历史记录显示失败:', error);
+        }
     }
 
     // 添加切换分组显示的函数
@@ -625,22 +652,32 @@
     `;
     document.head.appendChild(style);
 
-    // 添加分组函数
+    // 修改 groupHistoryByPrefix 函数
     function groupHistoryByPrefix(history) {
         const groups = {};
+        const usedCombinations = new Set(); // 用于记录已使用的演员名称和图片组合
 
         history.forEach(item => {
             if (!item.filename) return;
 
-            // 获取文件名前缀（去掉扩展名和数字后缀）
+            // 获取文件名（不包括扩展名）
             const filename = item.filename;
-            const nameWithoutExt = filename.replace(/\.[^/.]+$/, ''); // 去掉扩展名
-            const prefix = nameWithoutExt.replace(/[0-9]+$/, '').trim(); // 去掉数字后缀
+            const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+            
+            // 创建唯一标识：演员名称 + 图片文件名
+            const uniqueKey = `${item.actor || ''}_${nameWithoutExt}`;
+            
+            // 如果这个组合已经存在，跳过
+            if (usedCombinations.has(uniqueKey)) return;
+            usedCombinations.add(uniqueKey);
 
-            if (!groups[prefix]) {
-                groups[prefix] = [];
+            // 使用演员名称作为分组键
+            const groupKey = item.actor || '未分类';
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
             }
-            groups[prefix].push(item);
+            groups[groupKey].push(item);
         });
 
         // 对每个分组内的项目按时间戳排序（最新的在前）
@@ -1359,21 +1396,42 @@
     // 处理编辑按钮点击
     async function handleEditClick(id) {
         try {
+            console.log('开始编辑历史记录:', id);
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.get(id);
 
             request.onsuccess = () => {
                 const item = request.result;
-                if (!item) return;
+                if (!item) {
+                    console.error('未找到历史记录:', id);
+                    return;
+                }
 
+                console.log('获取到历史记录:', item);
                 currentEditingHistory = item;
-                document.getElementById('historyTitleInput').value = item.title || '';
-                document.getElementById('historyHighlightInput').value = item.highlight || '';
+                
+                // 填充表单
+                const titleInput = document.getElementById('historyTitleInput');
+                const highlightInput = document.getElementById('historyHighlightInput');
+                
+                titleInput.value = item.title || '';
+                highlightInput.value = item.highlight || '';
+                
+                console.log('表单已填充:', {
+                    title: titleInput.value,
+                    highlight: highlightInput.value
+                });
+
+                // 显示模态框
                 document.getElementById('historyEditModal').classList.remove('hidden');
             };
+
+            request.onerror = (error) => {
+                console.error('获取历史记录失败:', error);
+            };
         } catch (error) {
-            console.error('获取历史记录失败:', error);
+            console.error('编辑历史记录失败:', error);
         }
     }
 
@@ -1383,43 +1441,81 @@
         currentEditingHistory = null;
     }
 
-    // 保存历史记录编辑
+    // 修改 saveHistoryEdit 函数
     async function saveHistoryEdit() {
-        if (!currentEditingHistory) return;
+        if (!currentEditingHistory) {
+            console.error('没有正在编辑的历史记录');
+            return;
+        }
 
         try {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
-            // 更新历史记录
-            const updatedItem = {
-                ...currentEditingHistory,
-                title: document.getElementById('historyTitleInput').value,
-                highlight: document.getElementById('historyHighlightInput').value
-            };
+            // 先获取最新的记录
+            const getRequest = store.get(currentEditingHistory.id);
 
-            const request = store.put(updatedItem);
-
-            request.onsuccess = async () => {
-                // 更新显示
-                await updateHistoryDisplay();
-                closeHistoryEditModal();
-
-                // 如果当前网格中有使用这个历史记录的格子，也需要更新
-                const size = parseInt(document.getElementById('gridSize').value);
-                for (let i = 0; i < size * size; i++) {
-                    if (gridData[i] && gridData[i].id === currentEditingHistory.id) {
-                        gridData[i] = {...updatedItem};
-                        await updateCell(i, gridData[i], false);
-                    }
+            getRequest.onsuccess = async () => {
+                const currentRecord = getRequest.result;
+                if (!currentRecord) {
+                    console.error('未找到要编辑的记录');
+                    return;
                 }
+
+                // 更新历史记录
+                const updatedItem = {
+                    ...currentRecord, // 保留所有原有属性
+                    title: document.getElementById('historyTitleInput').value,
+                    highlight: document.getElementById('historyHighlightInput').value,
+                    timestamp: new Date().toISOString() // 更新时间戳
+                };
+
+                // 执行更新
+                const putRequest = store.put(updatedItem);
+
+                putRequest.onsuccess = async () => {
+                    console.log('历史记录更新成功:', updatedItem);
+                    
+                    // 更新显示
+                    await updateHistoryDisplay();
+                    
+                    // 更新当前网格中的相关格子
+                    const size = parseInt(document.getElementById('gridSize').value);
+                    for (let i = 0; i < size * size; i++) {
+                        if (gridData[i] && gridData[i].id === currentEditingHistory.id) {
+                            gridData[i] = {...updatedItem};
+                            await updateCell(i, gridData[i], false);
+                        }
+                    }
+                    
+                    // 关闭模态框
+                    closeHistoryEditModal();
+                };
+
+                putRequest.onerror = (error) => {
+                    console.error('更新历史记录失败:', error);
+                    alert('保存失败，请重试');
+                };
             };
 
-            request.onerror = () => {
-                console.error('更新历史记录失败:', request.error);
+            getRequest.onerror = (error) => {
+                console.error('获取历史记录失败:', error);
+                alert('保存失败，请重试');
             };
+
+            // 添加事务完成的处理
+            transaction.oncomplete = () => {
+                console.log('事务完成');
+            };
+
+            transaction.onerror = (error) => {
+                console.error('事务失败:', error);
+                alert('保存失败，请重试');
+            };
+
         } catch (error) {
             console.error('保存编辑失败:', error);
+            alert('保存失败，请重试');
         }
     }
 </script>
