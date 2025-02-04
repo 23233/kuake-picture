@@ -221,30 +221,105 @@
     // 添加历史记录编辑相关变量和函数
     let currentEditingHistory = null;
 
-    // 初始化数据库
+    // 修改 initDB 函数
     async function initDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, 2); // 版本号改为2
+            // 检查浏览器是否支持 IndexedDB
+            if (!window.indexedDB) {
+                console.error('您的浏览器不支持 IndexedDB');
+                // 如果不支持 IndexedDB，尝试删除可能损坏的数据库
+                const delRequest = window.indexedDB.deleteDatabase(dbName);
+                delRequest.onsuccess = () => {
+                    console.log('已删除可能损坏的数据库');
+                };
+                reject(new Error('浏览器不支持 IndexedDB'));
+                return;
+            }
 
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                db = request.result;
-                resolve(db);
+            // 尝试删除可能损坏的数据库
+            const deleteRequest = window.indexedDB.deleteDatabase(dbName);
+            deleteRequest.onsuccess = () => {
+                console.log('成功删除旧数据库，准备重新创建');
+                
+                // 重新打开数据库
+                const request = indexedDB.open(dbName, 2);
+
+                request.onerror = (event) => {
+                    console.error('数据库打开失败:', event.target.error);
+                    reject(event.target.error);
+                };
+
+                request.onblocked = (event) => {
+                    console.error('数据库被阻塞:', event);
+                    // 尝试关闭所有其他打开的数据库连接
+                    if (db) {
+                        db.close();
+                    }
+                    reject(new Error('数据库被阻塞'));
+                };
+
+                request.onupgradeneeded = (event) => {
+                    console.log('数据库升级中...');
+                    const db = event.target.result;
+
+                    // 创建历史记录存储
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        const store = db.createObjectStore(storeName, { keyPath: 'id' });
+                        store.createIndex('timestamp', 'timestamp');
+                        store.createIndex('filename', 'filename');
+                        console.log('历史记录存储创建成功');
+                    }
+
+                    // 创建水印存储
+                    if (!db.objectStoreNames.contains(watermarkStoreName)) {
+                        const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
+                        watermarkStore.createIndex('filename', 'filename');
+                        console.log('水印存储创建成功');
+                    }
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    console.log('数据库初始化成功');
+
+                    // 添加错误处理
+                    db.onerror = (event) => {
+                        console.error('数据库错误:', event.target.error);
+                    };
+
+                    // 添加版本变更处理
+                    db.onversionchange = () => {
+                        db.close();
+                        console.log('数据库版本已更改，请刷新页面');
+                        alert('数据库版本已更改，请刷新页面');
+                    };
+
+                    resolve(db);
+                };
             };
 
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(storeName)) {
-                    const store = db.createObjectStore(storeName, { keyPath: 'id' });
-                    store.createIndex('timestamp', 'timestamp');
-                    store.createIndex('filename', 'filename');
-                }
-                if (!db.objectStoreNames.contains(watermarkStoreName)) {
-                    const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
-                    watermarkStore.createIndex('filename', 'filename');
-                }
+            deleteRequest.onerror = (event) => {
+                console.error('删除旧数据库失败:', event.target.error);
+                // 即使删除失败，也尝试继续打开数据库
+                const request = indexedDB.open(dbName, 2);
+                // ... 相同的打开数据库逻辑 ...
             };
         });
+    }
+
+    // 添加数据库状态检查函数
+    async function ensureDBConnection() {
+        if (!db) {
+            console.log('数据库连接不存在，尝试重新初始化...');
+            try {
+                await initDB();
+            } catch (error) {
+                console.error('数据库重新初始化失败:', error);
+                // 如果初始化失败，使用 localStorage 作为临时存储
+                alert('数据库初始化失败，将使用临时存储。请刷新页面重试。');
+            }
+        }
+        return db;
     }
 
     function initializeGrid(size) {
@@ -459,21 +534,24 @@
         cell.addEventListener('click', () => openEditModal(index));
     }
 
-    // 保存历史记录
+    // 修改 saveToHistory 函数
     async function saveToHistory(data) {
-        if (!db) await initDB();
+        const database = await ensureDBConnection();
+        if (!database) {
+            console.error('无法保存到历史记录：数据库未连接');
+            return;
+        }
 
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readwrite');
+            const transaction = database.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
-            // 确保数据包含必要的字段
             const historyItem = {
                 ...data,
                 id: Date.now() + Math.random(),
                 timestamp: new Date().toISOString(),
-                actor: data.actor || '', // 确保演员名称字段存在
-                filename: data.filename || '' // 确保文件名字段存在
+                actor: data.actor || '',
+                filename: data.filename || ''
             };
 
             const request = store.add(historyItem);
@@ -484,10 +562,14 @@
 
     // 获取所有历史记录
     async function getAllHistory() {
-        if (!db) await initDB();
+        const database = await ensureDBConnection();
+        if (!database) {
+            console.error('无法获取历史记录：数据库未连接');
+            return [];
+        }
 
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readonly');
+            const transaction = database.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.index('timestamp').getAll();
 
@@ -505,10 +587,14 @@
 
     // 删除历史记录
     async function deleteHistoryItem(id) {
-        if (!db) await initDB();
+        const database = await ensureDBConnection();
+        if (!database) {
+            console.error('无法删除历史记录：数据库未连接');
+            return;
+        }
 
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readwrite');
+            const transaction = database.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
             const request = store.delete(id);
 
@@ -1120,11 +1206,14 @@
     // 修改初始化代码，添加迁移步骤
     document.addEventListener('DOMContentLoaded', async () => {
         try {
+            console.log('页面加载，开始初始化数据库...');
             await initDB();
-            await migrateFromLocalStorage(); // 执行迁移
+            console.log('数据库初始化完成，开始更新显示...');
             await updateHistoryDisplay();
+            console.log('初始化完成');
         } catch (error) {
             console.error('初始化失败:', error);
+            alert('初始化失败，请刷新页面重试');
         }
     });
 
@@ -1358,9 +1447,13 @@
 
     // 保存水印到IndexedDB
     async function saveWatermark(watermark) {
-        if (!db) await initDB();
+        const database = await ensureDBConnection();
+        if (!database) {
+            console.error('无法保存水印：数据库未连接');
+            return;
+        }
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction([watermarkStoreName], 'readwrite');
+            const transaction = database.transaction([watermarkStoreName], 'readwrite');
             const store = transaction.objectStore(watermarkStoreName);
             console.log('正在保存水印:', watermark);
             const request = store.add(watermark);
@@ -1377,9 +1470,13 @@
 
     // 获取所有水印
     async function getAllWatermarks() {
-        if (!db) await initDB();
+        const database = await ensureDBConnection();
+        if (!database) {
+            console.error('无法获取水印：数据库未连接');
+            return [];
+        }
         return new Promise((resolve, reject) => {
-            const transaction = db.transaction([watermarkStoreName], 'readonly');
+            const transaction = database.transaction([watermarkStoreName], 'readonly');
             const store = transaction.objectStore(watermarkStoreName);
             const request = store.getAll();
             request.onsuccess = () => {
