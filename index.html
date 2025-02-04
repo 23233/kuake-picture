@@ -7,14 +7,23 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 p-4">
-<!-- 设置区域 -->
-<div class="mb-4">
-    <label class="block text-sm font-medium text-gray-700">选择宫格数量:</label>
-    <select id="gridSize" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
-        <option value="4">4 x 4</option>
-        <option value="3">3 x 3</option>
-        <option value="2">2 x 2</option>
-    </select>
+<!-- 设置区域 - 修改为flex布局 -->
+<div class="mb-4 flex space-x-4">
+    <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700">选择宫格数量:</label>
+        <select id="gridSize" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+            <option value="4">4 x 4</option>
+            <option value="3">3 x 3</option>
+            <option value="2">2 x 2</option>
+        </select>
+    </div>
+    <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700">选择编辑模式:</label>
+        <select id="editMode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500">
+            <option value="column">列复制（整列同步）</option>
+            <option value="unique">格子唯一（每格独立）</option>
+        </select>
+    </div>
 </div>
 
 <!-- 关键词设置和历史记录区域 -->
@@ -49,13 +58,13 @@
     <!-- 动态生成的格子将插入这里 -->
 </div>
 
-<!-- 生成按钮区域 -->
+<!-- 修改生成按钮区域 -->
 <div class="mt-4 flex space-x-4">
     <button id="generateImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
         生成图片
     </button>
-    <button id="generateColumnImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
-        生成列图片
+    <button id="generateCellImage" class="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600">
+        导出格子图片
     </button>
 </div>
 
@@ -102,15 +111,28 @@
     </div>
 </div>
 
-<!-- 列图片选择模态框 -->
-<div id="columnImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-6 rounded-lg w-96">
-        <h3 class="text-lg font-medium mb-4">选择要导出的列</h3>
-        <div id="columnImageSelectContainer" class="grid grid-cols-4 gap-2 mb-4">
-            <!-- 列选项将在这里动态生成 -->
+<!-- 修改列图片选择模态框为格子图片选择模态框 -->
+<div id="cellImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-[30vw]">
+        <h3 class="text-lg font-medium mb-4">选择要导出的格子</h3>
+        <div id="cellImageSelectContainer" class="grid gap-2 mb-4">
+            <!-- 格子选项将在这里动态生成 -->
         </div>
         <div class="flex justify-end space-x-2">
-            <button onclick="closeColumnImageModal()" class="px-4 py-2 border rounded-md">取消</button>
+            <button onclick="closeCellImageModal()" class="px-4 py-2 border rounded-md">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 添加格子选择模态框 -->
+<div id="cellSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-[30vw]">
+        <h3 class="text-lg font-medium mb-4">选择要替换的格子</h3>
+        <div id="cellSelectContainer" class="grid mb-4">
+            <!-- 格子选项将在这里动态生成 -->
+        </div>
+        <div class="flex justify-end space-x-2">
+            <button onclick="closeCellSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
         </div>
     </div>
 </div>
@@ -262,21 +284,23 @@
             const actorMetrics = ctx.measureText(actorText);
             ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.05);
 
-            // 绘制搜索关键词 - 分开绘制前缀和关键词
-            ctx.fillStyle = 'white';
-            ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.05);
+            // 绘制搜索关键词 - 只在有关键词时才显示
+            if (data.searchKeyword) {
+                ctx.fillStyle = 'white';
+                ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.05);
 
-            // 计算前缀文本宽度
-            const prefixWidth = ctx.measureText('跨克嗖索[').width;
+                // 计算前缀文本宽度
+                const prefixWidth = ctx.measureText('跨克嗖索[').width;
 
-            // 绘制关键词部分（红色）
-            ctx.fillStyle = '#ff4444';
-            ctx.fillText(data.searchKeyword || '', FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.05);
+                // 绘制关键词部分（红色）
+                ctx.fillStyle = '#ff4444';
+                ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.05);
 
-            // 绘制后缀括号（白色）
-            ctx.fillStyle = 'white';
-            const keywordWidth = ctx.measureText(data.searchKeyword || '').width;
-            ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.05);
+                // 绘制后缀括号（白色）
+                ctx.fillStyle = 'white';
+                const keywordWidth = ctx.measureText(data.searchKeyword).width;
+                ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.05);
+            }
 
             // 绘制剧名 - 向上移动位置
             ctx.font = `bold ${FIXED_SIZE * 0.1}px sans-serif`;
@@ -417,13 +441,23 @@
         // 按文件名前缀分组
         const groups = groupHistoryByPrefix(history);
 
-        // 生成分组后的HTML
-        container.innerHTML = Object.entries(groups).map(([prefix, items]) => `
-                <div class="col-span-full">
-                    <div class="text-sm font-medium text-gray-700 mb-2 bg-gray-50 p-2 rounded">
-                        ${prefix} (${items.length}项)
+        // 生成分组标题行
+        container.innerHTML = `
+            <div class="col-span-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                ${Object.entries(groups).map(([prefix, items]) => `
+                    <div 
+                        class="group-header cursor-pointer bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors"
+                        onclick="toggleGroupContent('${prefix.replace(/'/g, "\\'")}')"
+                    >
+                        <div class="text-sm font-medium text-gray-700">
+                            ${prefix} (${items.length}项)
+                        </div>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+                `).join('')}
+            </div>
+            ${Object.entries(groups).map(([prefix, items]) => `
+                <div id="group-${prefix}" class="group-content hidden col-span-full mb-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
                         ${items.map(item => `
                             <div class="relative group cursor-pointer border rounded p-2" onclick="applyHistoryItem(${item.id})">
                                 <div class="flex space-x-2">
@@ -458,77 +492,51 @@
                         `).join('')}
                     </div>
                 </div>
-            `).join('');
+            `).join('')}
+        `;
     }
 
-    // 修改历史记录容器的样式
-    document.getElementById('historyContainer').className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2';
+    // 添加切换分组显示的函数
+    function toggleGroupContent(prefix) {
+        const groupContent = document.getElementById(`group-${prefix}`);
+        if (groupContent) {
+            // 隐藏其他所有分组
+            document.querySelectorAll('.group-content').forEach(el => {
+                if (el.id !== `group-${prefix}`) {
+                    el.classList.add('hidden');
+                }
+            });
+            // 切换当前分组的显示状态
+            groupContent.classList.toggle('hidden');
+        }
+    }
 
     // 添加新的CSS样式
     const style = document.createElement('style');
     style.textContent = `
-            /* 历史记录分组样式 */
-            #historyContainer > div {
-                background-color: white;
-                transition: all 0.2s;
-            }
+        /* 组标题样式 */
+        .group-header {
+            transition: all 0.2s;
+            border: 1px solid #e5e7eb;
+        }
 
-            #historyContainer > div:hover {
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
+        .group-header:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
 
-            /* 缩小分组标题的间距 */
-            #historyContainer .text-sm {
-                margin-bottom: 0.5rem;
-                padding: 0.25rem 0.5rem;
-                border-radius: 0.25rem;
-                background-color: #f3f4f6;
-                font-size: 0.75rem;
-            }
+        /* 组内容过渡效果 */
+        .group-content {
+            transition: all 0.3s ease-in-out;
+        }
 
-            /* 优化项目卡片样式 */
-            #historyContainer .grid-cols-2 > div {
-                padding: 0.5rem;
-            }
+        .group-content.hidden {
+            display: none;
+        }
 
-            /* 缩小图片预览尺寸 */
-            #historyContainer .w-12 {
-                width: 2.5rem;
-            }
-
-            #historyContainer .h-12 {
-                height: 2.5rem;
-            }
-
-            /* 优化文字显示 */
-            #historyContainer .text-sm {
-                font-size: 0.75rem;
-                line-height: 1;
-            }
-
-            #historyContainer .text-xs {
-                font-size: 0.65rem;
-                line-height: 1;
-            }
-
-            /* 减小整体间距 */
-            #historyContainer .gap-2 {
-                gap: 0.375rem;
-            }
-
-            #historyContainer .mb-4 {
-                margin-bottom: 0.75rem;
-            }
-
-            /* 优化按钮大小 */
-            #historyContainer .w-5 {
-                width: 1.125rem;
-            }
-
-            #historyContainer .h-5 {
-                height: 1.125rem;
-            }
-        `;
+        /* 保持其他现有样式 */
+        ${style.textContent}
+    `;
     document.head.appendChild(style);
 
     // 添加分组函数
@@ -574,34 +582,38 @@
                 const item = request.result;
                 if (!item) return;
 
-                const searchKeyword = document.getElementById('searchKeyword').value; // 获取当前关键词
+                const searchKeyword = document.getElementById('searchKeyword').value;
                 const size = parseInt(document.getElementById('gridSize').value);
-                let emptyColIndex = -1;
+                const editMode = document.getElementById('editMode').value;
 
-                // 检查每一列的第一个格子
-                for (let col = 0; col < size; col++) {
-                    if (!gridData[col]) {
-                        emptyColIndex = col;
-                        break;
+                if (editMode === 'column') {
+                    // 列复制模式的逻辑保持不变
+                    let emptyColIndex = -1;
+                    for (let col = 0; col < size; col++) {
+                        if (!gridData[col]) {
+                            emptyColIndex = col;
+                            break;
+                        }
                     }
-                }
 
-                if (emptyColIndex === -1) {
-                    // 没有空列，显示列选择模态框
-                    showColumnSelectModal({...item, searchKeyword});
-                    return;
-                }
+                    if (emptyColIndex === -1) {
+                        showColumnSelectModal({...item, searchKeyword});
+                        return;
+                    }
 
-                // 更新整列数据
-                for (let row = 0; row < size; row++) {
-                    const index = row * size + emptyColIndex;
-                    gridData[index] = {
-                        ...item,
-                        searchKeyword, // 使用当前关键词
-                        offsetX: 0,
-                        offsetY: 0
-                    };
-                    updateCell(index, gridData[index]);
+                    for (let row = 0; row < size; row++) {
+                        const index = row * size + emptyColIndex;
+                        gridData[index] = {
+                            ...item,
+                            searchKeyword,
+                            offsetX: 0,
+                            offsetY: 0
+                        };
+                        updateCell(index, gridData[index]);
+                    }
+                } else {
+                    // 格子唯一模式：显示格子选择模态框
+                    showCellSelectModal({...item, searchKeyword});
                 }
             };
 
@@ -611,6 +623,85 @@
         } catch (error) {
             console.error('应用历史记录失败:', error);
         }
+    }
+
+    // 添加格子选择模态框相关函数
+    function showCellSelectModal(historyItem) {
+        pendingHistoryItem = historyItem;
+        const modal = document.getElementById('cellSelectModal');
+        const container = document.getElementById('cellSelectContainer');
+        const size = parseInt(document.getElementById('gridSize').value);
+
+        // 设置网格列数
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        container.innerHTML = '';
+
+        // 生成格子选项
+        for (let i = 0; i < size * size; i++) {
+            const row = Math.floor(i / size);
+            const col = i % size;
+            const data = gridData[i];
+            const preview = data ? `
+                <div class="flex flex-col items-center">
+                    <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
+                    <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
+                </div>
+            ` : '<div class="text-gray-400">空格</div>';
+
+            container.innerHTML += `
+                <div
+                    onclick="applyCellHistoryItem(${i})"
+                    class="cursor-pointer border rounded p-1 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
+                >
+                    <div class="text-xs font-medium mb-1">格子 ${i + 1}</div>
+                    ${preview}
+                </div>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeCellSelectModal() {
+        document.getElementById('cellSelectModal').classList.add('hidden');
+        pendingHistoryItem = null;
+    }
+
+    async function applyCellHistoryItem(index) {
+        if (!pendingHistoryItem) return;
+
+        gridData[index] = {
+            ...pendingHistoryItem,
+            offsetX: 0,
+            offsetY: 0
+        };
+        
+        // 更新格子UI
+        const cell = document.getElementById('gridContainer').children[index];
+        const previewImageUrl = await generatePreviewImage(gridData[index]);
+        
+        if (previewImageUrl) {
+            cell.innerHTML = `
+                <div class="image-container">
+                    <img src="${previewImageUrl}" draggable="false">
+                </div>
+            `;
+            cell.addEventListener('click', () => openEditModal(index));
+        }
+
+        // 更新模态框中的格子预览
+        const modalCell = document.getElementById('cellSelectContainer').children[index];
+        if (modalCell) {
+            modalCell.innerHTML = `
+                <div class="text-xs font-medium mb-1">格子 ${index + 1}</div>
+                <div class="flex flex-col items-center">
+                    <img src="${gridData[index].image}" class="w-12 h-12 object-cover rounded mb-1">
+                    <div class="text-xs text-gray-500 truncate w-full text-center">${gridData[index].title || ''}</div>
+                </div>
+            `;
+        }
+
+        closeCellSelectModal();
     }
 
     // 修改 showColumnSelectModal 函数
@@ -699,6 +790,7 @@
         const actor = document.getElementById('actorInput').value;
         const highlight = document.getElementById('highlightInput').value;
         const searchKeyword = document.getElementById('searchKeyword').value;
+        const editMode = document.getElementById('editMode').value;
 
         // 如果没有选择新图片但有旧数据，保留旧图片
         if (!imageFile && gridData[currentEditingCell]) {
@@ -716,13 +808,19 @@
                 await saveToHistory(updatedData);
             }
 
-            // 更新整列数据
-            const size = parseInt(document.getElementById('gridSize').value);
-            const colIndex = currentEditingCell % size;
-            for (let row = 0; row < size; row++) {
-                const index = row * size + colIndex;
-                gridData[index] = {...updatedData};
-                await updateCell(index, gridData[index], false); // 传入 false 表示不保存历史记录
+            if (editMode === 'column') {
+                // 列复制模式：更新整列数据
+                const size = parseInt(document.getElementById('gridSize').value);
+                const colIndex = currentEditingCell % size;
+                for (let row = 0; row < size; row++) {
+                    const index = row * size + colIndex;
+                    gridData[index] = {...updatedData};
+                    await updateCell(index, gridData[index], false);
+                }
+            } else {
+                // 格子唯一模式：只更新当前格子
+                gridData[currentEditingCell] = {...updatedData};
+                await updateCell(currentEditingCell, gridData[currentEditingCell], false);
             }
 
             closeEditModal();
@@ -750,13 +848,19 @@
             // 先保存到历史记录（只保存一次）
             await saveToHistory(newData);
 
-            // 更新整列数据
-            const size = parseInt(document.getElementById('gridSize').value);
-            const colIndex = currentEditingCell % size;
-            for (let row = 0; row < size; row++) {
-                const index = row * size + colIndex;
-                gridData[index] = {...newData};
-                await updateCell(index, gridData[index], false); // 传入 false 表示不保存历史记录
+            if (editMode === 'column') {
+                // 列复制模式：更新整列数据
+                const size = parseInt(document.getElementById('gridSize').value);
+                const colIndex = currentEditingCell % size;
+                for (let row = 0; row < size; row++) {
+                    const index = row * size + colIndex;
+                    gridData[index] = {...newData};
+                    await updateCell(index, gridData[index], false);
+                }
+            } else {
+                // 格子唯一模式：只更新当前格子
+                gridData[currentEditingCell] = {...newData};
+                await updateCell(currentEditingCell, gridData[currentEditingCell], false);
             }
 
             closeEditModal();
@@ -904,21 +1008,56 @@
     // 初始化4x4网格
     initializeGrid(4);
 
-    // 修改生成列图片的函数
-    async function generateColumnImage(colIndex) {
+    // 修改生成列图片相关函数为格子图片相关函数
+    function showCellImageModal() {
+        const modal = document.getElementById('cellImageModal');
+        const container = document.getElementById('cellImageSelectContainer');
         const size = parseInt(document.getElementById('gridSize').value);
-        const cellIndex = colIndex;
 
+        // 设置网格列数
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        container.innerHTML = '';
+
+        // 生成格子选项
+        for (let i = 0; i < size * size; i++) {
+            const data = gridData[i];
+            const preview = data ? `
+                <div class="flex flex-col items-center">
+                    <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
+                    <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
+                </div>
+            ` : '<div class="text-gray-400">空格</div>';
+
+            container.innerHTML += `
+                <div
+                    onclick="generateSingleCellImage(${i})"
+                    class="cursor-pointer border rounded p-2 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
+                >
+                    <div class="text-xs font-medium mb-1">格子 ${i + 1}</div>
+                    ${preview}
+                </div>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeCellImageModal() {
+        document.getElementById('cellImageModal').classList.add('hidden');
+    }
+
+    async function generateSingleCellImage(cellIndex) {
         if (!gridData[cellIndex]) {
-            alert('该列没有内容');
+            alert('该格子没有内容');
             return;
         }
 
-        // 直接使用generatePreviewImage生成图片
-        const previewImageUrl = await generatePreviewImage(gridData[cellIndex]);
-
-        if (!previewImageUrl) {
-            alert('图片生成失败');
+        // 获取当前格子的DOM元素中的图片URL
+        const cell = document.getElementById('gridContainer').children[cellIndex];
+        const img = cell.querySelector('img');
+        
+        if (!img || !img.src) {
+            alert('图片获取失败');
             return;
         }
 
@@ -931,57 +1070,15 @@
 
         const link = document.createElement('a');
         link.download = filename;
-        link.href = previewImageUrl;
+        link.href = img.src;  // 直接使用已经生成好的图片URL
         link.click();
 
-        closeColumnImageModal();
+        closeCellImageModal();
     }
 
     // 更新事件监听器
     document.getElementById('generateImage').addEventListener('click', generateGridImage);
-
-    // 添加列图片导出相关函数
-    function showColumnImageModal() {
-        const modal = document.getElementById('columnImageModal');
-        const container = document.getElementById('columnImageSelectContainer');
-        const size = parseInt(document.getElementById('gridSize').value);
-
-        container.innerHTML = '';
-        for (let col = 0; col < size; col++) {
-            const firstCellIndex = col;
-            const data = gridData[firstCellIndex];
-            const preview = data ? `
-                    <div class="flex space-x-2">
-                        <div class="w-12 h-12 flex-shrink-0">
-                            <img src="${data.image}" class="w-full h-full object-cover rounded">
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium truncate">${data.title || ''}</div>
-                            <div class="text-xs text-gray-500 truncate">${data.actor || ''}</div>
-                        </div>
-                    </div>
-                ` : '<div class="text-gray-400">空列</div>';
-
-            container.innerHTML += `
-                    <div
-                        onclick="generateColumnImage(${col})"
-                        class="cursor-pointer border rounded p-2 hover:bg-gray-100"
-                    >
-                        <div class="text-xs font-medium mb-1">第 ${col + 1} 列</div>
-                        ${preview}
-                    </div>
-                `;
-        }
-
-        modal.classList.remove('hidden');
-    }
-
-    function closeColumnImageModal() {
-        document.getElementById('columnImageModal').classList.add('hidden');
-    }
-
-    // 添加生成列图片按钮事件监听
-    document.getElementById('generateColumnImage').addEventListener('click', showColumnImageModal);
+    document.getElementById('generateCellImage').addEventListener('click', showCellImageModal);
 
     // 修改复制按钮的处理函数
     async function handleCopyClick(id) {
@@ -1065,48 +1162,72 @@
     async function randomCombineFromAllGroups() {
         try {
             const history = await getAllHistory();
-            const groups = groupHistoryByPrefix(history);
-            const groupNames = Object.keys(groups);
+            const editMode = document.getElementById('editMode').value;
+            const size = parseInt(document.getElementById('gridSize').value);
+            const searchKeyword = document.getElementById('searchKeyword').value;
 
-            if (groupNames.length === 0) {
+            if (history.length === 0) {
                 alert('没有可用的数据进行随机组合');
                 return;
             }
 
-            // 随机选择最多4个不同的分组
-            const selectedGroups = shuffle(groupNames).slice(0, 4);
-
-            // 从每个选中的分组中随机选择一项
-            const selectedItems = selectedGroups.map(groupName => {
-                const groupItems = groups[groupName] || [];
-                return groupItems[Math.floor(Math.random() * groupItems.length)];
-            }).filter(item => item);
-
-            if (selectedItems.length === 0) {
-                alert('没有足够的数据进行随机组合');
-                return;
-            }
-
             // 清空现有数据
-            const size = parseInt(document.getElementById('gridSize').value);
             gridData = new Array(size * size).fill(null);
 
-            // 填充随机选择的项目
-            const searchKeyword = document.getElementById('searchKeyword').value;
-            selectedItems.forEach((item, index) => {
-                if (index < size) { // 确保不超过网格大小
-                    for (let row = 0; row < size; row++) {
-                        const cellIndex = row * size + index;
-                        gridData[cellIndex] = {
-                            ...item,
-                            searchKeyword,
-                            offsetX: 0,
-                            offsetY: 0
-                        };
-                        updateCell(cellIndex, gridData[cellIndex], false);
+            if (editMode === 'column') {
+                // 列复制模式：按分组随机选择
+                const groups = groupHistoryByPrefix(history);
+                const groupNames = Object.keys(groups);
+                
+                if (groupNames.length === 0) return;
+
+                // 随机选择最多4个不同的分组
+                const selectedGroups = shuffle(groupNames).slice(0, 4);
+                const selectedItems = selectedGroups.map(groupName => {
+                    const groupItems = groups[groupName] || [];
+                    return groupItems[Math.floor(Math.random() * groupItems.length)];
+                }).filter(item => item);
+
+                // 填充列数据
+                selectedItems.forEach((item, index) => {
+                    if (index < size) {
+                        for (let row = 0; row < size; row++) {
+                            const cellIndex = row * size + index;
+                            gridData[cellIndex] = {
+                                ...item,
+                                searchKeyword,
+                                offsetX: 0,
+                                offsetY: 0
+                            };
+                            updateCell(cellIndex, gridData[cellIndex], false);
+                        }
                     }
+                });
+            } else {
+                // 格子唯一模式：从所有历史记录中随机选择
+                const totalCells = size * size;
+                
+                // 如果历史记录不够，就循环使用
+                let availableItems = [...history];
+                while (availableItems.length < totalCells) {
+                    availableItems = [...availableItems, ...history];
                 }
-            });
+                
+                // 随机打乱所有可用项目
+                availableItems = shuffle(availableItems);
+
+                // 填充每个格子
+                for (let i = 0; i < totalCells; i++) {
+                    const item = availableItems[i];
+                    gridData[i] = {
+                        ...item,
+                        searchKeyword,
+                        offsetX: 0,
+                        offsetY: 0
+                    };
+                    updateCell(i, gridData[i], false);
+                }
+            }
 
         } catch (error) {
             console.error('随机组合失败:', error);
@@ -1220,6 +1341,13 @@
         font-weight: 600;
         color: white;
     }
+
+    /* 添加格子选择模态框样式 */
+    #cellSelectContainer {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
 </style>
 </body>
 </html>
