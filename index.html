@@ -221,105 +221,40 @@
     // 添加历史记录编辑相关变量和函数
     let currentEditingHistory = null;
 
-    // 修改 initDB 函数
-    async function initDB() {
-        return new Promise((resolve, reject) => {
-            // 检查浏览器是否支持 IndexedDB
-            if (!window.indexedDB) {
-                console.error('您的浏览器不支持 IndexedDB');
-                // 如果不支持 IndexedDB，尝试删除可能损坏的数据库
-                const delRequest = window.indexedDB.deleteDatabase(dbName);
-                delRequest.onsuccess = () => {
-                    console.log('已删除可能损坏的数据库');
-                };
-                reject(new Error('浏览器不支持 IndexedDB'));
-                return;
-            }
-
-            // 尝试删除可能损坏的数据库
-            const deleteRequest = window.indexedDB.deleteDatabase(dbName);
-            deleteRequest.onsuccess = () => {
-                console.log('成功删除旧数据库，准备重新创建');
-                
-                // 重新打开数据库
-                const request = indexedDB.open(dbName, 2);
-
-                request.onerror = (event) => {
-                    console.error('数据库打开失败:', event.target.error);
-                    reject(event.target.error);
-                };
-
-                request.onblocked = (event) => {
-                    console.error('数据库被阻塞:', event);
-                    // 尝试关闭所有其他打开的数据库连接
-                    if (db) {
-                        db.close();
-                    }
-                    reject(new Error('数据库被阻塞'));
-                };
-
-                request.onupgradeneeded = (event) => {
-                    console.log('数据库升级中...');
-                    const db = event.target.result;
-
-                    // 创建历史记录存储
-                    if (!db.objectStoreNames.contains(storeName)) {
-                        const store = db.createObjectStore(storeName, { keyPath: 'id' });
-                        store.createIndex('timestamp', 'timestamp');
-                        store.createIndex('filename', 'filename');
-                        console.log('历史记录存储创建成功');
-                    }
-
-                    // 创建水印存储
-                    if (!db.objectStoreNames.contains(watermarkStoreName)) {
-                        const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
-                        watermarkStore.createIndex('filename', 'filename');
-                        console.log('水印存储创建成功');
-                    }
-                };
-
-                request.onsuccess = (event) => {
-                    db = event.target.result;
-                    console.log('数据库初始化成功');
-
-                    // 添加错误处理
-                    db.onerror = (event) => {
-                        console.error('数据库错误:', event.target.error);
-                    };
-
-                    // 添加版本变更处理
-                    db.onversionchange = () => {
-                        db.close();
-                        console.log('数据库版本已更改，请刷新页面');
-                        alert('数据库版本已更改，请刷新页面');
-                    };
-
-                    resolve(db);
-                };
-            };
-
-            deleteRequest.onerror = (event) => {
-                console.error('删除旧数据库失败:', event.target.error);
-                // 即使删除失败，也尝试继续打开数据库
-                const request = indexedDB.open(dbName, 2);
-                // ... 相同的打开数据库逻辑 ...
-            };
-        });
+    // 添加超时Promise包装函数
+    function withTimeout(promise, timeout) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('操作超时')), timeout)
+            )
+        ]);
     }
 
-    // 添加数据库状态检查函数
-    async function ensureDBConnection() {
-        if (!db) {
-            console.log('数据库连接不存在，尝试重新初始化...');
-            try {
-                await initDB();
-            } catch (error) {
-                console.error('数据库重新初始化失败:', error);
-                // 如果初始化失败，使用 localStorage 作为临时存储
-                alert('数据库初始化失败，将使用临时存储。请刷新页面重试。');
-            }
-        }
-        return db;
+    // 初始化数据库
+    async function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(dbName, 2); // 版本号改为2
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(storeName)) {
+                    const store = db.createObjectStore(storeName, { keyPath: 'id' });
+                    store.createIndex('timestamp', 'timestamp');
+                    store.createIndex('filename', 'filename');
+                }
+                if (!db.objectStoreNames.contains(watermarkStoreName)) {
+                    const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
+                    watermarkStore.createIndex('filename', 'filename');
+                }
+            };
+        });
     }
 
     function initializeGrid(size) {
@@ -534,24 +469,21 @@
         cell.addEventListener('click', () => openEditModal(index));
     }
 
-    // 修改 saveToHistory 函数
+    // 保存历史记录
     async function saveToHistory(data) {
-        const database = await ensureDBConnection();
-        if (!database) {
-            console.error('无法保存到历史记录：数据库未连接');
-            return;
-        }
+        if (!db) await initDB();
 
         return new Promise((resolve, reject) => {
-            const transaction = database.transaction([storeName], 'readwrite');
+            const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
+            // 确保数据包含必要的字段
             const historyItem = {
                 ...data,
                 id: Date.now() + Math.random(),
                 timestamp: new Date().toISOString(),
-                actor: data.actor || '',
-                filename: data.filename || ''
+                actor: data.actor || '', // 确保演员名称字段存在
+                filename: data.filename || '' // 确保文件名字段存在
             };
 
             const request = store.add(historyItem);
@@ -562,14 +494,10 @@
 
     // 获取所有历史记录
     async function getAllHistory() {
-        const database = await ensureDBConnection();
-        if (!database) {
-            console.error('无法获取历史记录：数据库未连接');
-            return [];
-        }
+        if (!db) await initDB();
 
         return new Promise((resolve, reject) => {
-            const transaction = database.transaction([storeName], 'readonly');
+            const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.index('timestamp').getAll();
 
@@ -587,14 +515,10 @@
 
     // 删除历史记录
     async function deleteHistoryItem(id) {
-        const database = await ensureDBConnection();
-        if (!database) {
-            console.error('无法删除历史记录：数据库未连接');
-            return;
-        }
+        if (!db) await initDB();
 
         return new Promise((resolve, reject) => {
-            const transaction = database.transaction([storeName], 'readwrite');
+            const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
             const request = store.delete(id);
 
@@ -621,7 +545,7 @@
             container.innerHTML = `
                 <div class="col-span-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
                     ${Object.entries(groups).map(([prefix, items]) => `
-                        <div 
+                        <div
                             class="group-header cursor-pointer bg-gray-50 p-2 rounded hover:bg-gray-100 transition-colors"
                             onclick="toggleGroupContent('${prefix.replace(/'/g, "\\'")}')"
                         >
@@ -749,10 +673,10 @@
             // 获取文件名（不包括扩展名）
             const filename = item.filename;
             const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
-            
+
             // 创建唯一标识：演员名称 + 图片文件名
             const uniqueKey = `${item.actor || ''}_${nameWithoutExt}`;
-            
+
             // 如果这个组合已经存在，跳过
             if (usedCombinations.has(uniqueKey)) return;
             usedCombinations.add(uniqueKey);
@@ -884,11 +808,11 @@
             offsetX: 0,
             offsetY: 0
         };
-        
+
         // 更新格子UI
         const cell = document.getElementById('gridContainer').children[index];
         const previewImageUrl = await generatePreviewImage(gridData[index]);
-        
+
         if (previewImageUrl) {
             cell.innerHTML = `
                 <div class="image-container">
@@ -1203,17 +1127,19 @@
         }
     }
 
-    // 修改初始化代码，添加迁移步骤
+    // 修改初始化代码，添加超时机制
     document.addEventListener('DOMContentLoaded', async () => {
         try {
-            console.log('页面加载，开始初始化数据库...');
-            await initDB();
-            console.log('数据库初始化完成，开始更新显示...');
+            await withTimeout(initDB(), 3000); // 3秒超时
+            await migrateFromLocalStorage();
             await updateHistoryDisplay();
-            console.log('初始化完成');
         } catch (error) {
             console.error('初始化失败:', error);
-            alert('初始化失败，请刷新页面重试');
+            if (error.message === '操作超时') {
+                alert('数据库初始化超时，请刷新页面重试');
+            } else {
+                alert('数据库初始化失败，请刷新页面重试');
+            }
         }
     });
 
@@ -1232,16 +1158,16 @@
     async function showWatermarkModal() {
         const modal = document.getElementById('watermarkModal');
         modal.classList.remove('hidden');
-        
+
         // 更新水印列表
         await updateWatermarkList();
-        
+
         // 重新绑定水印位置选择事件
         document.querySelectorAll('.watermark-position').forEach(btn => {
             // 移除旧的事件监听器
             btn.replaceWith(btn.cloneNode(true));
         });
-        
+
         // 添加新的事件监听器
         document.querySelectorAll('.watermark-position').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -1259,13 +1185,13 @@
         try {
             const watermarks = await getAllWatermarks();
             console.log('获取到的水印列表:', watermarks);
-            
+
             const container = document.getElementById('watermarkList');
             if (!container) {
                 console.error('未找到水印列表容器');
                 return;
             }
-            
+
             // 添加一个取消选择的选项
             container.innerHTML = `
                 <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
@@ -1282,7 +1208,7 @@
                 <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
                 </div>
             `).join('');
-            
+
             console.log('水印列表已更新');
         } catch (error) {
             console.error('更新水印列表失败:', error);
@@ -1293,23 +1219,23 @@
     window.selectWatermark = async function(id) {
         try {
             console.log('尝试选择水印，ID:', id);
-            
+
             if (id === null) {
                 selectedWatermark = null;
                 console.log('已取消选择水印');
             } else {
                 const watermarks = await getAllWatermarks();
                 console.log('可用的水印列表:', watermarks);
-                
+
                 selectedWatermark = watermarks.find(w => w.id === id);
                 console.log('找到的水印:', selectedWatermark);
-                
+
                 if (!selectedWatermark) {
                     console.error('未找到对应ID的水印:', id);
                     return;
                 }
             }
-            
+
             await updateWatermarkList();
             console.log('水印选择完成，当前选中:', selectedWatermark);
         } catch (error) {
@@ -1322,16 +1248,16 @@
         try {
             const files = Array.from(event.target.files);
             console.log('选择的文件:', files);
-            
+
             const existingWatermarks = await getAllWatermarks();
             const existingFilenames = new Set(existingWatermarks.map(w => w.filename));
-            
+
             for (const file of files) {
                 if (existingFilenames.has(file.name)) {
                     console.log(`跳过重复水印: ${file.name}`);
                     continue;
                 }
-                
+
                 const imageDataUrl = await readFileAsDataURL(file);
                 await saveWatermark({
                     id: Date.now(), // 移除 Math.random()，只使用时间戳
@@ -1340,7 +1266,7 @@
                 });
                 console.log(`水印已保存: ${file.name}`);
             }
-            
+
             await updateWatermarkList();
             console.log('水印列表已更新完成');
         } catch (error) {
@@ -1378,7 +1304,7 @@
                 // 列复制模式：按分组随机选择
                 const groups = groupHistoryByPrefix(history);
                 const groupNames = Object.keys(groups);
-                
+
                 if (groupNames.length === 0) return;
 
                 // 随机选择最多4个不同的分组
@@ -1406,13 +1332,13 @@
             } else {
                 // 格子唯一模式：从所有历史记录中随机选择
                 const totalCells = size * size;
-                
+
                 // 如果历史记录不够，就循环使用
                 let availableItems = [...history];
                 while (availableItems.length < totalCells) {
                     availableItems = [...availableItems, ...history];
                 }
-                
+
                 // 随机打乱所有可用项目
                 availableItems = shuffle(availableItems);
 
@@ -1447,13 +1373,9 @@
 
     // 保存水印到IndexedDB
     async function saveWatermark(watermark) {
-        const database = await ensureDBConnection();
-        if (!database) {
-            console.error('无法保存水印：数据库未连接');
-            return;
-        }
+        if (!db) await initDB();
         return new Promise((resolve, reject) => {
-            const transaction = database.transaction([watermarkStoreName], 'readwrite');
+            const transaction = db.transaction([watermarkStoreName], 'readwrite');
             const store = transaction.objectStore(watermarkStoreName);
             console.log('正在保存水印:', watermark);
             const request = store.add(watermark);
@@ -1470,13 +1392,9 @@
 
     // 获取所有水印
     async function getAllWatermarks() {
-        const database = await ensureDBConnection();
-        if (!database) {
-            console.error('无法获取水印：数据库未连接');
-            return [];
-        }
+        if (!db) await initDB();
         return new Promise((resolve, reject) => {
-            const transaction = database.transaction([watermarkStoreName], 'readonly');
+            const transaction = db.transaction([watermarkStoreName], 'readonly');
             const store = transaction.objectStore(watermarkStoreName);
             const request = store.getAll();
             request.onsuccess = () => {
@@ -1507,14 +1425,14 @@
 
                 console.log('获取到历史记录:', item);
                 currentEditingHistory = item;
-                
+
                 // 填充表单
                 const titleInput = document.getElementById('historyTitleInput');
                 const highlightInput = document.getElementById('historyHighlightInput');
-                
+
                 titleInput.value = item.title || '';
                 highlightInput.value = item.highlight || '';
-                
+
                 console.log('表单已填充:', {
                     title: titleInput.value,
                     highlight: highlightInput.value
@@ -1572,10 +1490,10 @@
 
                 putRequest.onsuccess = async () => {
                     console.log('历史记录更新成功:', updatedItem);
-                    
+
                     // 更新显示
                     await updateHistoryDisplay();
-                    
+
                     // 更新当前网格中的相关格子
                     const size = parseInt(document.getElementById('gridSize').value);
                     for (let i = 0; i < size * size; i++) {
@@ -1584,7 +1502,7 @@
                             await updateCell(i, gridData[i], false);
                         }
                     }
-                    
+
                     // 关闭模态框
                     closeHistoryEditModal();
                 };
