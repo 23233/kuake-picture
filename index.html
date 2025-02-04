@@ -28,9 +28,20 @@
 
 <!-- 关键词设置和历史记录区域 -->
 <div class="mb-4 space-y-4">
-    <div>
-        <label class="block text-sm font-medium text-gray-700">夸克搜索关键词:</label>
-        <input type="text" id="searchKeyword" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" onchange="updateSearchKeyword(this.value)">
+    <div class="flex space-x-4">
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700">夸克搜索关键词:</label>
+            <input type="text" id="searchKeyword" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-pink-500 focus:ring-pink-500" onchange="updateSearchKeyword(this.value)">
+        </div>
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700">水印Logo:</label>
+            <div class="flex space-x-2">
+                <input type="file" id="watermarkInput" accept="image/*" multiple class="hidden" onChange="handleWatermarkUpload(event)">
+                <button onclick="document.getElementById('watermarkInput').click()" class="mt-1 px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600">
+                    上传水印
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 历史记录选择区域 -->
@@ -137,6 +148,60 @@
     </div>
 </div>
 
+<!-- 添加水印选择模态框 -->
+<div id="watermarkModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-[500px]">
+        <h3 class="text-lg font-medium mb-4">选择水印设置</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">选择水印图片:</label>
+                <div id="watermarkList" class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
+                    <!-- 水印列表将在这里动态生成 -->
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">选择水印位置:</label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button class="watermark-position p-2 border rounded" data-position="top-left">左上</button>
+                    <button class="watermark-position p-2 border rounded" data-position="top-center">上中</button>
+                    <button class="watermark-position p-2 border rounded" data-position="top-right">右上</button>
+                    <button class="watermark-position p-2 border rounded" data-position="middle-left">左中</button>
+                    <button class="watermark-position p-2 border rounded bg-pink-500 text-white" data-position="center">中心</button>
+                    <button class="watermark-position p-2 border rounded" data-position="middle-right">右中</button>
+                    <button class="watermark-position p-2 border rounded" data-position="bottom-left">左下</button>
+                    <button class="watermark-position p-2 border rounded" data-position="bottom-center">下中</button>
+                    <button class="watermark-position p-2 border rounded" data-position="bottom-right">右下</button>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeWatermarkModal()" class="px-4 py-2 border rounded-md">取消</button>
+                <button onclick="generateFinalImage()" class="px-4 py-2 bg-pink-500 text-white rounded-md">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加历史记录编辑模态框 -->
+<div id="historyEditModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white p-6 rounded-lg w-96">
+        <h3 class="text-lg font-medium mb-4">修改内容</h3>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">剧名</label>
+                <input type="text" id="historyTitleInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">划重点</label>
+                <input type="text" id="historyHighlightInput" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeHistoryEditModal()" class="px-4 py-2 border rounded-md">取消</button>
+                <button onclick="saveHistoryEdit()" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let currentEditingCell = null;
     let gridData = [];
@@ -148,10 +213,18 @@
     const storeName = 'history';
     let db;
 
+    // 添加水印相关变量
+    let selectedWatermark = null;
+    let selectedPosition = 'center';
+    const watermarkStoreName = 'watermarks';
+
+    // 添加历史记录编辑相关变量和函数
+    let currentEditingHistory = null;
+
     // 初始化数据库
     async function initDB() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, 1);
+            const request = indexedDB.open(dbName, 2); // 版本号改为2
 
             request.onerror = () => reject(request.error);
             request.onsuccess = () => {
@@ -165,6 +238,10 @@
                     const store = db.createObjectStore(storeName, { keyPath: 'id' });
                     store.createIndex('timestamp', 'timestamp');
                     store.createIndex('filename', 'filename');
+                }
+                if (!db.objectStoreNames.contains(watermarkStoreName)) {
+                    const watermarkStore = db.createObjectStore(watermarkStoreName, { keyPath: 'id' });
+                    watermarkStore.createIndex('filename', 'filename');
                 }
             };
         });
@@ -282,7 +359,7 @@
             // 绘制演员名称 - 右对齐，保留右侧间距
             const actorText = `★ ${data.actor || ''}`;
             const actorMetrics = ctx.measureText(actorText);
-            ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.05);
+            ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.08);
 
             // 绘制搜索关键词 - 只在有关键词时才显示
             if (data.searchKeyword) {
@@ -470,6 +547,15 @@
                                     </div>
                                 </div>
                                 <div class="absolute top-1 right-1 flex space-x-1">
+                                    <button
+                                        onclick="event.stopPropagation(); handleEditClick(${item.id})"
+                                        class="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="修改"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                        </svg>
+                                    </button>
                                     <button
                                         onclick="event.stopPropagation(); handleCopyClick(${item.id})"
                                         class="bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1008,144 +1094,132 @@
     // 初始化4x4网格
     initializeGrid(4);
 
-    // 修改生成列图片相关函数为格子图片相关函数
-    function showCellImageModal() {
-        const modal = document.getElementById('cellImageModal');
-        const container = document.getElementById('cellImageSelectContainer');
-        const size = parseInt(document.getElementById('gridSize').value);
+    // 修改生成图片按钮的事件监听器
+    document.getElementById('generateImage').addEventListener('click', () => {
+        // 移除旧的事件监听器
+        document.getElementById('generateImage').removeEventListener('click', generateGridImage);
+        // 显示水印选择模态框
+        showWatermarkModal();
+    });
 
-        // 设置网格列数
-        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-        container.innerHTML = '';
-
-        // 生成格子选项
-        for (let i = 0; i < size * size; i++) {
-            const data = gridData[i];
-            const preview = data ? `
-                <div class="flex flex-col items-center">
-                    <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
-                    <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
-                </div>
-            ` : '<div class="text-gray-400">空格</div>';
-
-            container.innerHTML += `
-                <div
-                    onclick="generateSingleCellImage(${i})"
-                    class="cursor-pointer border rounded p-2 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
-                >
-                    <div class="text-xs font-medium mb-1">格子 ${i + 1}</div>
-                    ${preview}
-                </div>
-            `;
-        }
-
+    // 修改 showWatermarkModal 函数，确保正确显示水印列表
+    async function showWatermarkModal() {
+        const modal = document.getElementById('watermarkModal');
         modal.classList.remove('hidden');
-    }
-
-    function closeCellImageModal() {
-        document.getElementById('cellImageModal').classList.add('hidden');
-    }
-
-    async function generateSingleCellImage(cellIndex) {
-        if (!gridData[cellIndex]) {
-            alert('该格子没有内容');
-            return;
-        }
-
-        // 获取当前格子的DOM元素中的图片URL
-        const cell = document.getElementById('gridContainer').children[cellIndex];
-        const img = cell.querySelector('img');
         
-        if (!img || !img.src) {
-            alert('图片获取失败');
-            return;
-        }
-
-        // 导出图片
-        const data = gridData[cellIndex];
-        const actor = data.actor || 'unknown';
-        const title = data.title || 'untitled';
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `${actor}_${title}_${timestamp}.jpg`;
-
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = img.src;  // 直接使用已经生成好的图片URL
-        link.click();
-
-        closeCellImageModal();
+        // 更新水印列表
+        await updateWatermarkList();
+        
+        // 重新绑定水印位置选择事件
+        document.querySelectorAll('.watermark-position').forEach(btn => {
+            // 移除旧的事件监听器
+            btn.replaceWith(btn.cloneNode(true));
+        });
+        
+        // 添加新的事件监听器
+        document.querySelectorAll('.watermark-position').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.watermark-position').forEach(b => {
+                    b.classList.remove('bg-pink-500', 'text-white');
+                });
+                e.target.classList.add('bg-pink-500', 'text-white');
+                selectedPosition = e.target.dataset.position;
+            });
+        });
     }
 
-    // 更新事件监听器
-    document.getElementById('generateImage').addEventListener('click', generateGridImage);
-    document.getElementById('generateCellImage').addEventListener('click', showCellImageModal);
-
-    // 修改复制按钮的处理函数
-    async function handleCopyClick(id) {
-        event.stopPropagation(); // 阻止事件冒泡
-
+    // 修改 updateWatermarkList 函数，确保 ID 正确传递
+    async function updateWatermarkList() {
         try {
-            // 从 IndexedDB 获取对应的记录
-            const transaction = db.transaction([storeName], 'readonly');
-            const store = transaction.objectStore(storeName);
-            const request = store.get(id);
+            const watermarks = await getAllWatermarks();
+            console.log('获取到的水印列表:', watermarks);
+            
+            const container = document.getElementById('watermarkList');
+            if (!container) {
+                console.error('未找到水印列表容器');
+                return;
+            }
+            
+            // 添加一个取消选择的选项
+            container.innerHTML = `
+                <div class="watermark-item cursor-pointer border rounded p-2 ${!selectedWatermark ? 'border-pink-500' : ''}"
+                     onclick="selectWatermark(null)">
+                    <div class="h-16 flex items-center justify-center text-gray-500">
+                        不使用水印
+                    </div>
+                    <div class="text-xs text-center truncate mt-1">无水印</div>
+                </div>
+            ` + watermarks.map(watermark => `
+                <div class="watermark-item cursor-pointer border rounded p-2 ${selectedWatermark?.id === watermark.id ? 'border-pink-500' : ''}"
+                     onclick="selectWatermark(${watermark.id})">
+                <img src="${watermark.image}" class="w-full h-16 object-contain">
+                <div class="text-xs text-center truncate mt-1">${watermark.filename}</div>
+                </div>
+            `).join('');
+            
+            console.log('水印列表已更新');
+        } catch (error) {
+            console.error('更新水印列表失败:', error);
+        }
+    }
 
-            request.onsuccess = () => {
-                const item = request.result;
-                if (!item) {
-                    console.error('未找到记录:', id);
+    // 修改 selectWatermark 函数，支持取消选择
+    window.selectWatermark = async function(id) {
+        try {
+            console.log('尝试选择水印，ID:', id);
+            
+            if (id === null) {
+                selectedWatermark = null;
+                console.log('已取消选择水印');
+            } else {
+                const watermarks = await getAllWatermarks();
+                console.log('可用的水印列表:', watermarks);
+                
+                selectedWatermark = watermarks.find(w => w.id === id);
+                console.log('找到的水印:', selectedWatermark);
+                
+                if (!selectedWatermark) {
+                    console.error('未找到对应ID的水印:', id);
                     return;
                 }
-
-                currentTemplate = item;
-                // 打开文件选择对话框
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.multiple = true;
-                input.accept = 'image/*';
-                input.onchange = handleMultipleImages;
-                input.click();
-            };
-
-            request.onerror = () => {
-                console.error('获取记录失败:', request.error);
-            };
+            }
+            
+            await updateWatermarkList();
+            console.log('水印选择完成，当前选中:', selectedWatermark);
         } catch (error) {
-            console.error('复制操作失败:', error);
+            console.error('选择水印失败:', error);
         }
-    }
+    };
 
-    // 处理多个图片的函数
-    async function handleMultipleImages(event) {
-        if (!currentTemplate) return;
-
-        const files = Array.from(event.target.files);
-        const history = await getAllHistory();
-        const existingFilenames = new Set(history.map(item => item.filename));
-
-        for (const file of files) {
-            if (existingFilenames.has(file.name)) {
-                console.log(`跳过重复文件: ${file.name}`);
-                continue;
-            }
-
-            try {
+    // 修改 handleWatermarkUpload 函数，使用整数 ID
+    async function handleWatermarkUpload(event) {
+        try {
+            const files = Array.from(event.target.files);
+            console.log('选择的文件:', files);
+            
+            const existingWatermarks = await getAllWatermarks();
+            const existingFilenames = new Set(existingWatermarks.map(w => w.filename));
+            
+            for (const file of files) {
+                if (existingFilenames.has(file.name)) {
+                    console.log(`跳过重复水印: ${file.name}`);
+                    continue;
+                }
+                
                 const imageDataUrl = await readFileAsDataURL(file);
-                const newItem = {
-                    ...currentTemplate,
-                    image: imageDataUrl,
-                    filename: file.name
-                };
-
-                await saveToHistory(newItem);
-                existingFilenames.add(file.name);
-            } catch (error) {
-                console.error('处理图片失败:', error);
+                await saveWatermark({
+                    id: Date.now(), // 移除 Math.random()，只使用时间戳
+                    filename: file.name,
+                    image: imageDataUrl
+                });
+                console.log(`水印已保存: ${file.name}`);
             }
+            
+            await updateWatermarkList();
+            console.log('水印列表已更新完成');
+        } catch (error) {
+            console.error('处理水印上传失败:', error);
         }
-
-        updateHistoryDisplay();
-        currentTemplate = null;
     }
 
     // 辅助函数：读取文件为DataURL
@@ -1243,6 +1317,110 @@
             [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
         }
         return newArray;
+    }
+
+    // 保存水印到IndexedDB
+    async function saveWatermark(watermark) {
+        if (!db) await initDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([watermarkStoreName], 'readwrite');
+            const store = transaction.objectStore(watermarkStoreName);
+            console.log('正在保存水印:', watermark);
+            const request = store.add(watermark);
+            request.onsuccess = () => {
+                console.log('水印保存成功:', watermark.id);
+                resolve(watermark);
+            };
+            request.onerror = () => {
+                console.error('水印保存失败:', request.error);
+                reject(request.error);
+            };
+        });
+    }
+
+    // 获取所有水印
+    async function getAllWatermarks() {
+        if (!db) await initDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([watermarkStoreName], 'readonly');
+            const store = transaction.objectStore(watermarkStoreName);
+            const request = store.getAll();
+            request.onsuccess = () => {
+                console.log('获取所有水印成功:', request.result);
+                resolve(request.result);
+            };
+            request.onerror = () => {
+                console.error('获取水印失败:', request.error);
+                reject(request.error);
+            };
+        });
+    }
+
+    // 处理编辑按钮点击
+    async function handleEditClick(id) {
+        try {
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                const item = request.result;
+                if (!item) return;
+
+                currentEditingHistory = item;
+                document.getElementById('historyTitleInput').value = item.title || '';
+                document.getElementById('historyHighlightInput').value = item.highlight || '';
+                document.getElementById('historyEditModal').classList.remove('hidden');
+            };
+        } catch (error) {
+            console.error('获取历史记录失败:', error);
+        }
+    }
+
+    // 关闭历史记录编辑模态框
+    function closeHistoryEditModal() {
+        document.getElementById('historyEditModal').classList.add('hidden');
+        currentEditingHistory = null;
+    }
+
+    // 保存历史记录编辑
+    async function saveHistoryEdit() {
+        if (!currentEditingHistory) return;
+
+        try {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+
+            // 更新历史记录
+            const updatedItem = {
+                ...currentEditingHistory,
+                title: document.getElementById('historyTitleInput').value,
+                highlight: document.getElementById('historyHighlightInput').value
+            };
+
+            const request = store.put(updatedItem);
+
+            request.onsuccess = async () => {
+                // 更新显示
+                await updateHistoryDisplay();
+                closeHistoryEditModal();
+
+                // 如果当前网格中有使用这个历史记录的格子，也需要更新
+                const size = parseInt(document.getElementById('gridSize').value);
+                for (let i = 0; i < size * size; i++) {
+                    if (gridData[i] && gridData[i].id === currentEditingHistory.id) {
+                        gridData[i] = {...updatedItem};
+                        await updateCell(i, gridData[i], false);
+                    }
+                }
+            };
+
+            request.onerror = () => {
+                console.error('更新历史记录失败:', request.error);
+            };
+        } catch (error) {
+            console.error('保存编辑失败:', error);
+        }
     }
 </script>
 
@@ -1348,6 +1526,22 @@
         overflow-y: auto;
     }
 
+    /* 添加水印相关样式 */
+    .watermark-item {
+        transition: all 0.2s;
+    }
+
+    .watermark-item:hover {
+        border-color: #ec4899;
+    }
+
+    .watermark-position {
+        transition: all 0.2s;
+    }
+
+    .watermark-position:hover {
+        background-color: #fdf2f8;
+    }
 </style>
 </body>
 </html>
