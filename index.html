@@ -1080,58 +1080,11 @@
         link.click();
     }
 
-    // 添加数据迁移函数
-    async function migrateFromLocalStorage() {
-        try {
-            // 检查是否已经迁移过（可以通过localStorage中的一个标志来检查）
-            if (localStorage.getItem('migrated') === 'true') {
-                return;
-            }
-
-            // 获取localStorage中的历史记录
-            const oldHistory = JSON.parse(localStorage.getItem('gridHistory') || '[]');
-
-            if (oldHistory.length > 0) {
-                // 确保数据库已初始化
-                if (!db) await initDB();
-
-                // 开始迁移数据
-                const transaction = db.transaction([storeName], 'readwrite');
-                const store = transaction.objectStore(storeName);
-
-                // 使用Promise.all来并行处理所有迁移操作
-                await Promise.all(oldHistory.map(item => {
-                    return new Promise((resolve, reject) => {
-                        // 确保每个项目都有必要的字段
-                        const migratedItem = {
-                            ...item,
-                            id: item.id || Date.now() + Math.random(),
-                            timestamp: item.timestamp || new Date().toISOString()
-                        };
-
-                        const request = store.add(migratedItem);
-                        request.onsuccess = () => resolve();
-                        request.onerror = () => reject(request.error);
-                    });
-                }));
-
-                // 迁移完成后，清除localStorage中的旧数据
-                localStorage.removeItem('gridHistory');
-                // 设置迁移完成标志
-                localStorage.setItem('migrated', 'true');
-
-                console.log(`成功迁移 ${oldHistory.length} 条历史记录到 IndexedDB`);
-            }
-        } catch (error) {
-            console.error('数据迁移失败:', error);
-        }
-    }
 
     // 修改初始化代码，添加超时机制
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             await withTimeout(initDB(), 3000); // 3秒超时
-            await migrateFromLocalStorage();
             await updateHistoryDisplay();
         } catch (error) {
             console.error('初始化失败:', error);
