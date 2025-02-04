@@ -126,7 +126,7 @@
 <div id="cellImageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
     <div class="bg-white p-6 rounded-lg w-[30vw]">
         <h3 class="text-lg font-medium mb-4">选择要导出的格子</h3>
-        <div id="cellImageSelectContainer" class="grid gap-2 mb-4">
+        <div id="cellImageSelectContainer" class="grid mb-4">
             <!-- 格子选项将在这里动态生成 -->
         </div>
         <div class="flex justify-end space-x-2">
@@ -225,7 +225,7 @@
     function withTimeout(promise, timeout) {
         return Promise.race([
             promise,
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
                 setTimeout(() => reject(new Error('操作超时')), timeout)
             )
         ]);
@@ -374,19 +374,19 @@
             // 绘制搜索关键词 - 只在有关键词时才显示
             if (data.searchKeyword) {
                 ctx.fillStyle = 'white';
-                ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.05);
+                ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.08);
 
                 // 计算前缀文本宽度
                 const prefixWidth = ctx.measureText('跨克嗖索[').width;
 
                 // 绘制关键词部分（红色）
                 ctx.fillStyle = '#ff4444';
-                ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.05);
+                ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.08);
 
                 // 绘制后缀括号（白色）
                 ctx.fillStyle = 'white';
                 const keywordWidth = ctx.measureText(data.searchKeyword).width;
-                ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.05);
+                ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.08);
             }
 
             // 绘制剧名 - 向上移动位置
@@ -1080,7 +1080,6 @@
         link.click();
     }
 
-
     // 修改初始化代码，添加超时机制
     document.addEventListener('DOMContentLoaded', async () => {
         try {
@@ -1484,6 +1483,239 @@
         } catch (error) {
             console.error('保存编辑失败:', error);
             alert('保存失败，请重试');
+        }
+    }
+
+    // 添加复制按钮的处理函数
+    async function handleCopyClick(id) {
+        event.stopPropagation(); // 阻止事件冒泡
+
+        try {
+            // 从 IndexedDB 获取对应的记录
+            const transaction = db.transaction([storeName], 'readonly');
+            const store = transaction.objectStore(storeName);
+            const request = store.get(id);
+
+            request.onsuccess = () => {
+                const item = request.result;
+                if (!item) {
+                    console.error('未找到记录:', id);
+                    return;
+                }
+
+                currentTemplate = item;
+                // 打开文件选择对话框
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.accept = 'image/*';
+                input.onchange = handleMultipleImages;
+                input.click();
+            };
+
+            request.onerror = () => {
+                console.error('获取记录失败:', request.error);
+            };
+        } catch (error) {
+            console.error('复制操作失败:', error);
+        }
+    }
+
+    // 处理多个图片的函数
+    async function handleMultipleImages(event) {
+        if (!currentTemplate) return;
+
+        const files = Array.from(event.target.files);
+        const history = await getAllHistory();
+        const existingFilenames = new Set(history.map(item => item.filename));
+
+        for (const file of files) {
+            if (existingFilenames.has(file.name)) {
+                console.log(`跳过重复文件: ${file.name}`);
+                continue;
+            }
+
+            try {
+                const imageDataUrl = await readFileAsDataURL(file);
+                const newItem = {
+                    ...currentTemplate,
+                    id: Date.now() + Math.random(), // 确保新ID唯一
+                    image: imageDataUrl,
+                    filename: file.name,
+                    timestamp: new Date().toISOString() // 更新时间戳
+                };
+
+                await saveToHistory(newItem);
+                existingFilenames.add(file.name);
+            } catch (error) {
+                console.error('处理图片失败:', error);
+            }
+        }
+
+        await updateHistoryDisplay();
+        currentTemplate = null;
+    }
+
+    // 添加关闭水印模态框的函数
+    function closeWatermarkModal() {
+        document.getElementById('watermarkModal').classList.add('hidden');
+        selectedWatermark = null;
+        selectedPosition = 'center'; // 重置水印位置为默认值
+
+        // 重置所有位置按钮的样式
+        document.querySelectorAll('.watermark-position').forEach(btn => {
+            btn.classList.remove('bg-pink-500', 'text-white');
+            if (btn.dataset.position === 'center') {
+                btn.classList.add('bg-pink-500', 'text-white');
+            }
+        });
+    }
+
+    // 添加关闭格子图片模态框的函数
+    function closeCellImageModal() {
+        document.getElementById('cellImageModal').classList.add('hidden');
+    }
+
+    // 添加生成最终图片的函数（包含水印）
+    async function generateFinalImage() {
+        try {
+            const size = parseInt(document.getElementById('gridSize').value);
+            const CELL_SIZE = 720; // 每个格子的大小
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = CELL_SIZE * size;
+            canvas.height = CELL_SIZE * size;
+
+            // 绘制白色背景
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制所有格子
+            for (let i = 0; i < size * size; i++) {
+                if (gridData[i]) {
+                    const row = Math.floor(i / size);
+                    const col = i % size;
+                    const x = col * CELL_SIZE;
+                    const y = row * CELL_SIZE;
+
+                    // 生成格子预览图片
+                    const previewImageUrl = await generatePreviewImage(gridData[i]);
+                    const img = new Image();
+                    await new Promise((resolve) => {
+                        img.onload = resolve;
+                        img.src = previewImageUrl;
+                    });
+
+                    ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
+                }
+            }
+
+            // 如果选择了水印，添加水印
+            if (selectedWatermark) {
+                const watermarkImg = new Image();
+                await new Promise((resolve) => {
+                    watermarkImg.onload = resolve;
+                    watermarkImg.src = selectedWatermark.image;
+                });
+
+                // 计算水印大小（默认为格子大小的20%）
+                const watermarkSize = CELL_SIZE * 0.2;
+                const aspectRatio = watermarkImg.width / watermarkImg.height;
+                const watermarkWidth = watermarkSize * aspectRatio;
+                const watermarkHeight = watermarkSize;
+
+                // 根据选择的位置计算水印坐标
+                const positions = {
+                    'top-left': { x: 20, y: 20 },
+                    'top-center': { x: (canvas.width - watermarkWidth) / 2, y: 20 },
+                    'top-right': { x: canvas.width - watermarkWidth - 20, y: 20 },
+                    'middle-left': { x: 20, y: (canvas.height - watermarkHeight) / 2 },
+                    'center': { x: (canvas.width - watermarkWidth) / 2, y: (canvas.height - watermarkHeight) / 2 },
+                    'middle-right': { x: canvas.width - watermarkWidth - 20, y: (canvas.height - watermarkHeight) / 2 },
+                    'bottom-left': { x: 20, y: canvas.height - watermarkHeight - 20 },
+                    'bottom-center': { x: (canvas.width - watermarkWidth) / 2, y: canvas.height - watermarkHeight - 20 },
+                    'bottom-right': { x: canvas.width - watermarkWidth - 20, y: canvas.height - watermarkHeight - 20 }
+                };
+
+                const pos = positions[selectedPosition] || positions.center;
+                ctx.drawImage(watermarkImg, pos.x, pos.y, watermarkWidth, watermarkHeight);
+            }
+
+            // 导出最终图片
+            const link = document.createElement('a');
+            link.download = `grid-${Date.now()}.jpg`;
+            link.href = canvas.toDataURL('image/jpeg', 0.8);
+            link.click();
+
+            // 关闭水印模态框
+            closeWatermarkModal();
+
+        } catch (error) {
+            console.error('生成最终图片失败:', error);
+            alert('生成图片失败，请重试');
+        }
+    }
+
+    // 添加导出格子图片按钮的事件监听器
+    document.getElementById('generateCellImage').addEventListener('click', () => {
+        showCellImageModal();
+    });
+
+    // 添加显示格子图片选择模态框的函数
+    function showCellImageModal() {
+        const modal = document.getElementById('cellImageModal');
+        const container = document.getElementById('cellImageSelectContainer');
+        const size = parseInt(document.getElementById('gridSize').value);
+
+        // 设置网格列数
+        container.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        container.innerHTML = '';
+
+        // 生成格子选项
+        for (let i = 0; i < size * size; i++) {
+            const data = gridData[i];
+            const preview = data ? `
+                <div class="flex flex-col items-center">
+                    <img src="${data.image}" class="w-12 h-12 object-cover rounded mb-1">
+                    <div class="text-xs text-gray-500 truncate w-full text-center">${data.title || ''}</div>
+                </div>
+            ` : '<div class="text-gray-400">空格</div>';
+
+            container.innerHTML += `
+                <div
+                    onclick="exportSingleCellImage(${i})"
+                    class="cursor-pointer border rounded p-1 hover:bg-gray-100 aspect-square flex flex-col items-center justify-center"
+                >
+                    <div class="text-xs font-medium mb-1">格子 ${i + 1}</div>
+                    ${preview}
+                </div>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // 添加导出单个格子图片的函数
+    async function exportSingleCellImage(index) {
+        if (!gridData[index]) {
+            alert('该格子没有内容');
+            return;
+        }
+
+        try {
+            // 生成预览图片
+            const previewImageUrl = await generatePreviewImage(gridData[index]);
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.download = `cell-${index + 1}-${Date.now()}.jpg`;
+            link.href = previewImageUrl;
+            link.click();
+
+        } catch (error) {
+            console.error('导出格子图片失败:', error);
+            alert('导出失败，请重试');
         }
     }
 </script>
