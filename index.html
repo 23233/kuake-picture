@@ -66,11 +66,17 @@
                         </svg>
                         <span>随机组合</span>
                     </button>
+                    <button onclick="showGroupSelectModal()"
+                        class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+                        </svg>
+                        <span>指定组合</span>
+                    </button>
                     <button onclick="shuffleCurrentGrid()"
                         class="px-3 py-1 bg-pink-500 text-white text-sm rounded hover:bg-pink-600 flex items-center space-x-1">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                            <path
-                                d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
+                            <path d="M10 3.5a1.5 1.5 0 013 0V4a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-.5a1.5 1.5 0 000 3h.5a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-.5a1.5 1.5 0 00-3 0v.5a1 1 0 01-1 1H6a1 1 0 01-1-1v-3a1 1 0 00-1-1h-.5a1.5 1.5 0 010-3H4a1 1 0 001-1V6a1 1 0 011-1h3a1 1 0 001-1v-.5z" />
                         </svg>
                         <span>打乱</span>
                     </button>
@@ -239,6 +245,20 @@
                     <button onclick="closeHistoryEditModal()" class="px-4 py-2 border rounded-md">取消</button>
                     <button onclick="saveHistoryEdit()" class="px-4 py-2 bg-pink-500 text-white rounded-md">保存</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加组选择模态框 -->
+    <div id="groupSelectModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-96">
+            <h3 class="text-lg font-medium mb-4">选择要组合的分组</h3>
+            <div id="groupSelectContainer" class="max-h-60 overflow-y-auto mb-4">
+                <!-- 分组选项将在这里动态生成 -->
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeGroupSelectModal()" class="px-4 py-2 border rounded-md">取消</button>
+                <button onclick="combineFromSelectedGroups()" class="px-4 py-2 bg-pink-500 text-white rounded-md">确定</button>
             </div>
         </div>
     </div>
@@ -1881,6 +1901,155 @@
             }
         }
 
+        // 添加组选择相关变量
+        let selectedGroups = new Set();
+
+        // 显示组选择模态框
+        async function showGroupSelectModal() {
+            try {
+                const history = await getAllHistory();
+                const groups = groupHistoryByPrefix(history);
+                const groupNames = Object.keys(groups);
+
+                const modal = document.getElementById('groupSelectModal');
+                const container = document.getElementById('groupSelectContainer');
+                
+                // 清空已选组
+                selectedGroups.clear();
+                
+                // 生成组选项
+                container.innerHTML = groupNames.map(groupName => `
+                    <div class="group-option flex items-center space-x-2 p-2 hover:bg-gray-100 cursor-pointer"
+                         onclick="toggleGroupSelection('${groupName.replace(/'/g, "\\'")}')">
+                        <input type="checkbox" class="h-4 w-4 text-pink-500 rounded border-gray-300"
+                               id="group-${groupName}" ${selectedGroups.has(groupName) ? 'checked' : ''}>
+                        <label for="group-${groupName}" class="flex-1 cursor-pointer">
+                            ${groupName} (${groups[groupName].length}项)
+                        </label>
+                    </div>
+                `).join('');
+
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('显示组选择模态框失败:', error);
+            }
+        }
+
+        // 切换组选择状态
+        function toggleGroupSelection(groupName) {
+            if (selectedGroups.has(groupName)) {
+                selectedGroups.delete(groupName);
+            } else {
+                selectedGroups.add(groupName);
+            }
+            
+            // 更新复选框状态
+            const checkbox = document.getElementById(`group-${groupName}`);
+            if (checkbox) {
+                checkbox.checked = selectedGroups.has(groupName);
+            }
+        }
+
+        // 关闭组选择模态框
+        function closeGroupSelectModal() {
+            document.getElementById('groupSelectModal').classList.add('hidden');
+            selectedGroups.clear();
+        }
+
+        // 从选定的组中组合
+        async function combineFromSelectedGroups() {
+            if (selectedGroups.size === 0) {
+                alert('请至少选择一个分组');
+                return;
+            }
+
+            try {
+                const history = await getAllHistory();
+                const editMode = document.getElementById('editMode').value;
+                const size = parseInt(document.getElementById('gridSize').value);
+                const searchKeyword = document.getElementById('searchKeyword').value;
+
+                // 获取所有分组
+                const groups = groupHistoryByPrefix(history);
+                
+                // 只保留选中的分组
+                const selectedGroupsData = {};
+                selectedGroups.forEach(groupName => {
+                    if (groups[groupName]) {
+                        selectedGroupsData[groupName] = groups[groupName];
+                    }
+                });
+
+                // 清空现有数据
+                gridData = new Array(size * size).fill(null);
+
+                if (editMode === 'column') {
+                    // 列复制模式：从选定的分组中随机选择
+                    const selectedGroupNames = Object.keys(selectedGroupsData);
+                    
+                    // 随机选择最多4个不同的分组（从已选择的分组中）
+                    const shuffledGroups = shuffle([...selectedGroupNames]);
+                    const selectedItems = shuffledGroups.map(groupName => {
+                        const groupItems = selectedGroupsData[groupName] || [];
+                        return groupItems[Math.floor(Math.random() * groupItems.length)];
+                    }).filter(item => item);
+
+                    // 填充列数据
+                    selectedItems.forEach((item, index) => {
+                        if (index < size) {
+                            for (let row = 0; row < size; row++) {
+                                const cellIndex = row * size + index;
+                                gridData[cellIndex] = {
+                                    ...item,
+                                    searchKeyword,
+                                    offsetX: 0,
+                                    offsetY: 0
+                                };
+                                updateCell(cellIndex, gridData[cellIndex], false);
+                            }
+                        }
+                    });
+                } else {
+                    // 格子唯一模式：按选定的组轮流随机填充
+                    const selectedGroupNames = Object.keys(selectedGroupsData);
+                    const totalCells = size * size;
+                    let currentCell = 0;
+
+                    while (currentCell < totalCells) {
+                        // 对每个选定的组随机选择一个项目
+                        const roundItems = selectedGroupNames.map(groupName => {
+                            const groupItems = selectedGroupsData[groupName];
+                            return groupItems[Math.floor(Math.random() * groupItems.length)];
+                        });
+
+                        // 打乱本轮选中的项目顺序
+                        const shuffledRoundItems = shuffle(roundItems);
+
+                        // 填充格子
+                        for (const item of shuffledRoundItems) {
+                            if (currentCell < totalCells) {
+                                gridData[currentCell] = {
+                                    ...item,
+                                    searchKeyword,
+                                    offsetX: 0,
+                                    offsetY: 0
+                                };
+                                updateCell(currentCell, gridData[currentCell], false);
+                                currentCell++;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                closeGroupSelectModal();
+            } catch (error) {
+                console.error('指定组合失败:', error);
+                alert('组合失败，请重试');
+            }
+        }
+
     </script>
 
     <style>
@@ -2014,6 +2183,20 @@
 
         .watermark-item:hover button {
             opacity: 1;
+        }
+
+        /* 组选择模态框样式 */
+        .group-option {
+            transition: all 0.2s;
+            border-radius: 0.375rem;
+        }
+
+        .group-option:hover {
+            background-color: rgba(236, 72, 153, 0.1);
+        }
+
+        .group-option input[type="checkbox"] {
+            accent-color: #ec4899;
         }
     </style>
 </body>
