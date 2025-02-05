@@ -361,17 +361,16 @@
         }
 
         // 修改 generatePreviewImage 函数
-        async function generatePreviewImage(data) {
-            const FIXED_SIZE = 720;
+        async function generatePreviewImage(data, width = 720, height = 720) {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
-            canvas.width = FIXED_SIZE;
-            canvas.height = FIXED_SIZE;
+            canvas.width = width;
+            canvas.height = height;
 
             // 绘制白色背景
             ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, FIXED_SIZE, FIXED_SIZE);
+            ctx.fillRect(0, 0, width, height);
 
             // 加载并绘制图片
             const img = new Image();
@@ -385,9 +384,9 @@
                 });
 
                 // 计算图片绘制尺寸
-                // 强制宽度为720，高度按比例计算
-                const scale = FIXED_SIZE / img.width;
-                const drawWidth = FIXED_SIZE;
+                // 强制宽度为传入的宽度，高度按比例计算
+                const scale = width / img.width;
+                const drawWidth = width;
                 const drawHeight = img.height * scale;
                 const drawX = 0;
                 const drawY = 0; // 靠上对齐
@@ -403,69 +402,73 @@
 
                 // 绘制文字
                 ctx.fillStyle = 'white';
-                const fontSize = FIXED_SIZE * 0.06;
+                const fontSize = width * 0.06;
                 ctx.font = `bold ${fontSize}px sans-serif`;
                 ctx.textBaseline = 'top';
 
-                // 绘制演员名称 - 右对齐，保留右侧间距
-                const actorText = `★ ${data.actor || ''}`;
-                const actorMetrics = ctx.measureText(actorText);
-                ctx.fillText(actorText, FIXED_SIZE - FIXED_SIZE * 0.05 - actorMetrics.width, FIXED_SIZE * 0.08);
+                if (data.actor) {
+                    // 绘制演员名称 - 右对齐，保留右侧间距
+                    const actorText = `★ ${data.actor || ''}`;
+                    const actorMetrics = ctx.measureText(actorText);
+                    ctx.fillText(actorText, width - width * 0.05 - actorMetrics.width, height * 0.08);
+                }
 
-                // 绘制搜索关键词 - 只在有关键词时才显示
                 if (data.searchKeyword) {
                     ctx.fillStyle = 'white';
-                    ctx.fillText('跨克嗖索[', FIXED_SIZE * 0.05, FIXED_SIZE * 0.08);
+                    ctx.fillText('跨克嗖索[', width * 0.05, height * 0.08);
 
                     // 计算前缀文本宽度
                     const prefixWidth = ctx.measureText('跨克嗖索[').width;
 
                     // 绘制关键词部分（红色）
                     ctx.fillStyle = '#ff4444';
-                    ctx.fillText(data.searchKeyword, FIXED_SIZE * 0.05 + prefixWidth, FIXED_SIZE * 0.08);
+                    ctx.fillText(data.searchKeyword, width * 0.05 + prefixWidth, height * 0.08);
 
                     // 绘制后缀括号（白色）
                     ctx.fillStyle = 'white';
                     const keywordWidth = ctx.measureText(data.searchKeyword).width;
-                    ctx.fillText(']', FIXED_SIZE * 0.05 + prefixWidth + keywordWidth, FIXED_SIZE * 0.08);
+                    ctx.fillText(']', width * 0.05 + prefixWidth + keywordWidth, height * 0.08);
                 }
 
-                // 绘制剧名 - 向上移动位置
-                ctx.font = `bold ${FIXED_SIZE * 0.1}px sans-serif`;
-                ctx.fillText(data.title || '', FIXED_SIZE * 0.05, FIXED_SIZE * 0.65); // 从0.75改为0.7
+                // 绘制剧名
+                ctx.font = `bold ${width * 0.1}px sans-serif`;
+                ctx.fillText(data.title || '', width * 0.05, height * 0.65);
 
-                // 绘制划重点 - 支持多行文本
-                ctx.fillStyle = '#ff4444';
-                ctx.font = `${FIXED_SIZE * 0.05}px sans-serif`;
-                const highlightText = `划重点：${data.highlight || ''}`;
-                const maxWidth = FIXED_SIZE * 0.9; // 最大宽度为90%的画布宽度
-                const lineHeight = FIXED_SIZE * 0.06; // 行高
-                const startY = FIXED_SIZE * 0.78; // 从0.85改为0.78，增加与剧名的间距
+                if (data.highlight) {
+                    // 绘制划重点 - 支持多行文本
+                    ctx.fillStyle = '#ff4444';
+                    ctx.font = `${width * 0.05}px sans-serif`;
+                    const highlightText = `划重点：${data.highlight || ''}`;
 
-                // 文本换行处理函数
-                function wrapText(text, x, y, maxWidth, lineHeight) {
-                    const words = text.split('');
-                    let line = '';
-                    let y0 = y;
+                    const maxWidth = width * 0.9;
+                    const lineHeight = height * 0.06;
+                    const startY = height * 0.78;
 
-                    for (let n = 0; n < words.length; n++) {
-                        const testLine = line + words[n];
-                        const metrics = ctx.measureText(testLine);
-                        const testWidth = metrics.width;
+                    // 文本换行处理函数
+                    function wrapText(text, x, y, maxWidth, lineHeight) {
+                        const words = text.split('');
+                        let line = '';
+                        let y0 = y;
 
-                        if (testWidth > maxWidth && n > 0) {
-                            ctx.fillText(line, x, y0);
-                            line = words[n];
-                            y0 += lineHeight;
-                        } else {
-                            line = testLine;
+                        for (let n = 0; n < words.length; n++) {
+                            const testLine = line + words[n];
+                            const metrics = ctx.measureText(testLine);
+                            const testWidth = metrics.width;
+
+                            if (testWidth > maxWidth && n > 0) {
+                                ctx.fillText(line, x, y0);
+                                line = words[n];
+                                y0 += lineHeight;
+                            } else {
+                                line = testLine;
+                            }
                         }
+                        ctx.fillText(line, x, y0);
                     }
-                    ctx.fillText(line, x, y0);
-                }
 
-                // 应用文本换行
-                wrapText(highlightText, FIXED_SIZE * 0.05, startY, maxWidth, lineHeight);
+                    // 应用文本换行
+                    wrapText(highlightText, width * 0.05, startY, maxWidth, lineHeight);
+                }
 
                 // 在绘制完所有文字后，清除阴影设置
                 ctx.shadowColor = 'transparent';
